@@ -58,7 +58,7 @@
             background: #f1f4f6; outline: none; font-size: 15px;
         }
 
-        /* --- LAYOUT BÀI HỌC DỘNG --- */
+        /* --- LAYOUT DỮ LIỆU --- */
         .container { display: flex; gap: 20px; max-width: 1100px; margin: 0 auto; width: 100%; }
         .column { flex: 1; display: flex; flex-direction: column; gap: 12px; }
 
@@ -67,7 +67,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
-        /* Màu sắc màu nền theo thứ tự 3 cột */
         .bg-col-0 { background: #1a4d2e; }   
         .bg-col-1 { background: #78281f; }    
         .bg-col-2 { background: #B5782A; }  
@@ -133,12 +132,17 @@
     </style>
     
     <script>
+        // =========================================================================
+        // 🔑 CHỈ CẦN THAY THẾ ID CỦA GOOGLE SHEET VÀO ĐÂY:
+        // =========================================================================
+        const GOOGLE_SHEET_ID = "1z6zHScSU1VZP300IWHp0wsWLApSodh1Z";
+        
+        // Cấu trúc tự động chuyển ID thành đường dẫn nạp dữ liệu chuẩn
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv`;
+        const LOCAL_STORAGE_KEY = "KHCB_APP_DATA_CACHE";
+
         // 📦 DỮ LIỆU TĨNH
         let STATIC_DATA_STORE = [];
-
-        // 🔗 LINK XUẤT BẢN TSV TỪ GOOGLE SHEET
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/1z6zHScSU1VZP300IWHp0wsWLApSodh1Z/edit?gid=1086241319#gid=1086241319";
-        const LOCAL_STORAGE_KEY = "KHCB_APP_DATA_CACHE";
 
         function normalizeGoogleDriveLink(rawUrl) {
             if (!rawUrl || rawUrl.trim() === "" || rawUrl.trim() === "#") return "#";
@@ -150,7 +154,7 @@
         }
 
         window.onload = function() {
-            // 1. Ưu tiên đọc dữ liệu từ LocalStorage trước
+            // 1. Đọc dữ liệu từ LocalStorage trước
             const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cachedData) {
                 try {
@@ -163,7 +167,7 @@
                 renderUIFromData(STATIC_DATA_STORE);
             }
 
-            // 2. Tự động đồng bộ ngầm dữ liệu mới từ Google Sheet
+            // 2. Tự động đồng bộ dữ liệu mới nhất từ Google Sheet
             fetchAndBuildCache(false);
         };
 
@@ -224,12 +228,34 @@
                 }
             });
 
-            // Xử lý các thẻ chưa có con
+            // Xử lý các thẻ trống
             document.querySelectorAll('.sheet-dropdown').forEach(div => {
                 if(div.innerHTML.trim() === '') {
                     div.innerHTML = '<span style="color:#95a5a6; font-size:13px; display:block; padding:3px 10px; font-style: italic; text-align:center;">Chưa có dữ liệu con</span>';
                 }
             });
+        }
+
+        // Tự động phân tách CSV an toàn
+        function parseCSVLine(text) {
+            let result = [];
+            let entry = '';
+            let inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                let c = text[i];
+                if (inQuotes) {
+                    if (c === '"') {
+                        if (i + 1 < text.length && text[i + 1] === '"') { entry += '"'; i++; }
+                        else { inQuotes = false; }
+                    } else { entry += c; }
+                } else {
+                    if (c === '"') { inQuotes = true; }
+                    else if (c === ',') { result.push(entry); entry = ''; }
+                    else { entry += c; }
+                }
+            }
+            result.push(entry);
+            return result;
         }
 
         function fetchAndBuildCache(isGenerateMode = false) {
@@ -241,11 +267,11 @@
                     
                     for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
-                        let columns = lines[i].split('\t');
+                        let columns = parseCSVLine(lines[i]);
                         if (columns.length >= 2) {
                             let id = columns[0].trim().toUpperCase().replace(/\s+/g, '');
-                            let textDisplay = columns[1].trim().replace(/^"|"$/g, '');
-                            let url = columns[2] ? columns[2].trim().replace(/^"|"$/g, '') : "";
+                            let textDisplay = columns[1].trim();
+                            let url = columns[2] ? columns[2].trim() : "";
                             let idParts = id.split('_');
                             
                             if (idParts.length === 1) {
@@ -258,13 +284,12 @@
                         }
                     }
 
-                    // Tự động lưu bản ghi mới vào LocalStorage
+                    // Lưu dữ liệu vào LocalStorage
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataArr));
 
                     if (isGenerateMode) {
                         generateNewCodeTemplate(dataArr);
                     } else {
-                        // Cập nhật lại giao diện nếu dữ liệu trên màn hình khác bản cập nhật
                         if (JSON.stringify(STATIC_DATA_STORE) !== JSON.stringify(dataArr)) {
                             STATIC_DATA_STORE = dataArr;
                             renderUIFromData(dataArr);
@@ -341,7 +366,7 @@
         </div>
     </div>
 
-    <!-- Container bài học chính -->
+    <!-- Container chính -->
     <div class="container" id="main-container"></div>
 
 </body>
