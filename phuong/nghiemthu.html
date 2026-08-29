@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
+    <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC & NGHIỆM THU</title>
     <!-- Thư viện docx.js tạo file Word chuẩn XML -->
     <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -15,7 +15,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
             background: #fff;
             padding: 20px;
@@ -43,8 +43,8 @@
         .btn-summary:disabled { background-color: #cccccc; cursor: not-allowed; }
         .btn-summary:hover:not(:disabled) { background-color: #bf360c; }
         
-        table.main-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        table.main-table th, table.main-table td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: center; }
+        table.main-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.main-table th, table.main-table td { border: 1px solid #e0e0e0; padding: 8px 6px; text-align: center; }
         table.main-table th { background-color: #1b5e20; color: white; font-weight: bold; }
         .sub-header { background-color: #2e7d32; }
         tbody tr:nth-child(even) { background-color: #f9f9f9; }
@@ -57,7 +57,7 @@
         }
         .modal-content {
             background-color: #fff; margin: 30px auto; padding: 20px 40px;
-            width: 850px; max-width: 95%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 900px; max-width: 95%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .modal-actions {
             display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;
@@ -78,8 +78,8 @@
         .doc-subtitle { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 20px; display: block; }
         .doc-p { text-align: justify; margin: 8px 0; }
         .doc-indent-p { margin-left: 40px; margin-top: 4px; margin-bottom: 4px; }
-        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10pt; }
-        .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
+        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 9.5pt; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; }
         .doc-table th { font-weight: bold; }
         .doc-signatures-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
         .doc-signatures-table td { width: 50%; vertical-align: top; text-align: center; font-size: 13pt; }
@@ -149,7 +149,7 @@
 let priceMap = {}; 
 let allData = [];
 let currentFilteredData = [];
-let currentDocType = 'single'; // 'single' hoặc 'summary'
+let currentDocType = 'single';
 
 const SHEET_ID = "1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w"; 
 const SHEET_SO_LUONG = "So_luong_dat";
@@ -192,6 +192,12 @@ function parseCSVLine(line) {
     }
     result.push(entry.trim().replace(/^"|"$/g, ''));
     return result;
+}
+
+function parseNumber(val) {
+    if (!val) return 0;
+    let num = parseFloat(val.toString().replace(/[^0-9.-]+/g, ""));
+    return isNaN(num) ? 0 : num;
 }
 
 function docSoThanhChu(so) {
@@ -271,17 +277,28 @@ function loadData() {
 function parsePriceData(csvText) {
     let lines = csvText.split(/\r?\n/);
     priceMap = {
-        'A1': { price: 74600 }, 'A2': { price: 81300 },
-        'A3': { price: 87000 }, 'A4': { price: 90600 }
+        'A1': { price: 74600, contractQty: 0, contractAmount: 0, name: "Nước khoáng đóng bình vòi 18,5l", unit: "Bình" },
+        'A2': { price: 81300, contractQty: 0, contractAmount: 0, name: "Nước khoáng đóng bình úp 19l", unit: "Bình" },
+        'A3': { price: 87000, contractQty: 0, contractAmount: 0, name: "Nước khoáng đóng chai 0,35l", unit: "Thùng" },
+        'A4': { price: 90600, contractQty: 0, contractAmount: 0, name: "Nước khoáng đóng chai 0,5l", unit: "Thùng" }
     };
+    
     for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         let cols = parseCSVLine(lines[i]);
         if (cols.length >= 2) {
             let key = cols[1] ? cols[1].trim().toUpperCase() : "";
             if (key && priceMap.hasOwnProperty(key)) {
-                let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : priceMap[key].price;
-                priceMap[key].price = isNaN(price) ? priceMap[key].price : price;
+                // Cột E (Index 4): Số lượng hợp đồng
+                let contractQty = cols[4] ? parseNumber(cols[4]) : 0;
+                // Cột F (Index 5): Đơn giá
+                let price = cols[5] ? parseNumber(cols[5]) : priceMap[key].price;
+                // Cột G (Index 6): Tổng giá tiền hợp đồng
+                let contractAmount = cols[6] ? parseNumber(cols[6]) : (contractQty * price);
+
+                priceMap[key].price = price > 0 ? price : priceMap[key].price;
+                priceMap[key].contractQty = contractQty;
+                priceMap[key].contractAmount = contractAmount > 0 ? contractAmount : (contractQty * priceMap[key].price);
             }
         }
     }
@@ -297,10 +314,10 @@ function parseOrderData(csvText) {
             allData.push({
                 unit: cols[1] ? cols[1].trim() : "",
                 month: cols[2] ? cols[2].trim() : "",
-                qty1: parseFloat(cols[3]) || 0,
-                qty2: parseFloat(cols[4]) || 0,
-                qty3: parseFloat(cols[5]) || 0,
-                qty4: parseFloat(cols[6]) || 0,
+                qty1: parseNumber(cols[3]),
+                qty2: parseNumber(cols[4]),
+                qty3: parseNumber(cols[5]),
+                qty4: parseNumber(cols[6]),
                 b1: cols[7] ? cols[7].trim() : "", 
                 b2: cols[8] ? cols[8].trim() : "", 
                 b3: cols[9] ? cols[9].trim() : "", 
@@ -378,10 +395,7 @@ function applyFilter() {
 
     renderTable(currentFilteredData);
 
-    // Bật/tắt nút Tạo biên bản từng đơn vị
     document.getElementById('btn-create-doc').disabled = !(unitVal !== "" && monthVal !== "" && currentFilteredData.length > 0);
-    
-    // Bật/tắt nút Tạo biên bản Tổng thể (Hình 7) khi chọn tháng (hoặc tất cả dữ liệu)
     document.getElementById('btn-create-summary').disabled = !(currentFilteredData.length > 0 && monthVal !== "");
 }
 
@@ -420,7 +434,7 @@ function closeDocModal() {
     document.getElementById('docModal').style.display = 'none';
 }
 
-/* 1. PREVIEW BIÊN BẢN TỪNG ĐƠN VỊ */
+/* 1. PREVIEW BIÊN BẢN TỪNG ĐƠN VỊ (CÓ CỘT SỐ LƯỢNG HỢP ĐỒNG E & TỔNG TIỀN HỢP ĐỒNG G) */
 function renderSingleDocPreview() {
     let item = currentFilteredData[0];
     let monthOnly = getCleanMonth(item.month);
@@ -433,23 +447,21 @@ function renderSingleDocPreview() {
     let b3 = item.b3 || "";
     let b4 = item.b4 || "";
 
-    let p1 = priceMap['A1'].price;
-    let p2 = priceMap['A2'].price;
-    let p3 = priceMap['A3'].price;
-    let p4 = priceMap['A4'].price;
+    let a1 = priceMap['A1'], a2 = priceMap['A2'], a3 = priceMap['A3'], a4 = priceMap['A4'];
 
-    let amt1 = item.qty1 * p1;
-    let amt2 = item.qty2 * p2;
-    let amt3 = item.qty3 * p3;
-    let amt4 = item.qty4 * p4;
+    let amt1 = item.qty1 * a1.price;
+    let amt2 = item.qty2 * a2.price;
+    let amt3 = item.qty3 * a3.price;
+    let amt4 = item.qty4 * a4.price;
     let totalAmt = amt1 + amt2 + amt3 + amt4;
     let totalText = docSoThanhChu(totalAmt);
+    let totalContractAmount = a1.contractAmount + a2.contractAmount + a3.contractAmount + a4.contractAmount;
 
     let docHTML = `
         <div class="doc-quoc-hieu">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
         <div class="doc-tieu-ngu">Độc lập - Tự do - Hạnh phúc</div>
         <div class="doc-title">BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG</div>
-        <span class="doc-subtitle">(Tháng &nbsp;&nbsp;&nbsp;&nbsp;/2026)</span>
+        <span class="doc-subtitle">(Tháng &nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(monthOnly)}/2026)</span>
 
         <p class="doc-p" style="text-indent: 40px;">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
         <p class="doc-p" style="text-indent: 40px;">Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
@@ -477,59 +489,71 @@ function renderSingleDocPreview() {
         <table class="doc-table">
             <thead>
                 <tr>
-                    <th style="width: 5%;">STT</th>
-                    <th style="width: 25%;">Danh mục hàng hóa</th>
-                    <th style="width: 8%;">Đơn vị tính</th>
-                    <th style="width: 10%;">Đơn giá (VNĐ)</th>
-                    <th style="width: 13%;">Số lượng đã bàn giao lũy kế đến tháng trước liền kề</th>
-                    <th style="width: 13%;">Số tiền đã thanh toán lũy kế đến tháng trước liền kề</th>
-                    <th style="width: 13%;">Số lượng bàn giao đợt này</th>
-                    <th style="width: 13%;">Số tiền thanh toán đợt này (VNĐ)</th>
+                    <th style="width: 4%;">STT</th>
+                    <th style="width: 20%;">Danh mục hàng hóa</th>
+                    <th style="width: 6%;">ĐVT</th>
+                    <th style="width: 9%;">Đơn giá (VNĐ)</th>
+                    <th style="width: 10%;">Số lượng Hợp đồng (Cột E)</th>
+                    <th style="width: 11%;">Số tiền Hợp đồng (Cột G)</th>
+                    <th style="width: 10%;">SL lũy kế trước</th>
+                    <th style="width: 10%;">Tiền lũy kế trước</th>
+                    <th style="width: 10%;">SL đợt này</th>
+                    <th style="width: 10%;">Số tiền đợt này (VNĐ)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>1</td>
-                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình úp 19l</td>
-                    <td>Bình</td>
-                    <td style="text-align: right;">${formatNumber(p1)}</td>
+                    <td style="text-align: left;">${a2.name} (A2)</td>
+                    <td>${a2.unit}</td>
+                    <td style="text-align: right;">${formatNumber(a2.price)}</td>
+                    <td>${formatNumber(a2.contractQty)}</td>
+                    <td style="text-align: right;">${formatCurrency(a2.contractAmount)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty2)}</td>
                     <td style="text-align: right;">${formatNumber(amt2)}</td>
                 </tr>
                 <tr>
                     <td>2</td>
-                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình vòi 18,5l</td>
-                    <td>Bình</td>
-                    <td style="text-align: right;">${formatNumber(p2)}</td>
+                    <td style="text-align: left;">${a1.name} (A1)</td>
+                    <td>${a1.unit}</td>
+                    <td style="text-align: right;">${formatNumber(a1.price)}</td>
+                    <td>${formatNumber(a1.contractQty)}</td>
+                    <td style="text-align: right;">${formatCurrency(a1.contractAmount)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty1)}</td>
                     <td style="text-align: right;">${formatNumber(amt1)}</td>
                 </tr>
                 <tr>
                     <td>3</td>
-                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,35l</td>
-                    <td>Thùng</td>
-                    <td style="text-align: right;">${formatNumber(p3)}</td>
+                    <td style="text-align: left;">${a3.name} (A3)</td>
+                    <td>${a3.unit}</td>
+                    <td style="text-align: right;">${formatNumber(a3.price)}</td>
+                    <td>${formatNumber(a3.contractQty)}</td>
+                    <td style="text-align: right;">${formatCurrency(a3.contractAmount)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty3)}</td>
                     <td style="text-align: right;">${formatNumber(amt3)}</td>
                 </tr>
                 <tr>
                     <td>4</td>
-                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,5l</td>
-                    <td>Thùng</td>
-                    <td style="text-align: right;">${formatNumber(p4)}</td>
+                    <td style="text-align: left;">${a4.name} (A4)</td>
+                    <td>${a4.unit}</td>
+                    <td style="text-align: right;">${formatNumber(a4.price)}</td>
+                    <td>${formatNumber(a4.contractQty)}</td>
+                    <td style="text-align: right;">${formatCurrency(a4.contractAmount)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty4)}</td>
                     <td style="text-align: right;">${formatNumber(amt4)}</td>
                 </tr>
                 <tr style="font-weight: bold;">
-                    <td colspan="7" style="text-align: center;">Tổng cộng</td>
+                    <td colspan="5" style="text-align: center;">Tổng cộng</td>
+                    <td style="text-align: right;">${formatCurrency(totalContractAmount)}</td>
+                    <td colspan="3"></td>
                     <td style="text-align: right;">${formatNumber(totalAmt)}</td>
                 </tr>
                 <tr>
-                    <td colspan="8" style="text-align: left;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
+                    <td colspan="10" style="text-align: left;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
                 </tr>
             </tbody>
         </table>
@@ -663,7 +687,7 @@ function renderSummaryDocPreview() {
     document.getElementById('doc-preview-container').innerHTML = docHTML;
 }
 
-/* XUẤT FILE WORD (.DOCX) DỰA THEO LOẠI BIÊN BẢN (ĐƠN VỊ HOẶC TỔNG THỂ) */
+/* XUẤT FILE WORD (.DOCX) DỰA THEO LOẠI BIÊN BẢN */
 function downloadWordDoc() {
     if (currentDocType === 'single') {
         downloadSingleWordDoc();
@@ -687,24 +711,20 @@ async function downloadSingleWordDoc() {
     let b3 = item.b3 || "";
     let b4 = item.b4 || "";
 
-    let p1 = priceMap['A1'].price;
-    let p2 = priceMap['A2'].price;
-    let p3 = priceMap['A3'].price;
-    let p4 = priceMap['A4'].price;
+    let a1 = priceMap['A1'], a2 = priceMap['A2'], a3 = priceMap['A3'], a4 = priceMap['A4'];
 
-    let amt1 = item.qty1 * p1;
-    let amt2 = item.qty2 * p2;
-    let amt3 = item.qty3 * p3;
-    let amt4 = item.qty4 * p4;
+    let amt1 = item.qty1 * a1.price;
+    let amt2 = item.qty2 * a2.price;
+    let amt3 = item.qty3 * a3.price;
+    let amt4 = item.qty4 * a4.price;
     let totalAmt = amt1 + amt2 + amt3 + amt4;
     let totalText = docSoThanhChu(totalAmt);
+    let totalContractAmount = a1.contractAmount + a2.contractAmount + a3.contractAmount + a4.contractAmount;
 
     const doc = new Document({
         styles: {
             default: {
-                document: {
-                    run: { font: "Times New Roman", size: 26 }
-                }
+                document: { run: { font: "Times New Roman", size: 26 } }
             }
         },
         sections: [{
@@ -742,29 +762,33 @@ async function downloadSingleWordDoc() {
                     rows: [
                         new TableRow({
                             children: [
-                                new TableCell({ width: { size: 5, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "STT", bold: true, size: 20 })] })] }),
-                                new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Danh mục hàng hóa", bold: true, size: 20 })] })] }),
-                                new TableCell({ width: { size: 8, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ĐVT", bold: true, size: 20 })] })] }),
-                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Đơn giá", bold: true, size: 20 })] })] }),
-                                new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "SL lũy kế trước", bold: true, size: 20 })] })] }),
-                                new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tiền lũy kế trước", bold: true, size: 20 })] })] }),
-                                new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "SL đợt này", bold: true, size: 20 })] })] }),
-                                new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tiền đợt này", bold: true, size: 20 })] })] }),
+                                new TableCell({ width: { size: 4, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "STT", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 20, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Danh mục hàng hóa", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 6, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ĐVT", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 9, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Đơn giá", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "SL Hợp đồng (E)", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 11, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tiền Hợp đồng (G)", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "SL lũy kế trước", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tiền lũy kế trước", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "SL đợt này", bold: true, size: 18 })] })] }),
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tiền đợt này", bold: true, size: 18 })] })] }),
                             ]
                         }),
-                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "1", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Nước khoáng đóng bình úp 19l", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Bình", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(p1), size: 20 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty2), size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt2), size: 20 })] })] }) ] }),
-                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "2", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Nước khoáng đóng bình vòi 18,5l", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Bình", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(p2), size: 20 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty1), size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt1), size: 20 })] })] }) ] }),
-                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "3", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Nước khoáng đóng chai 0,35l", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Thùng", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(p3), size: 20 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty3), size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt3), size: 20 })] })] }) ] }),
-                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "4", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Nước khoáng đóng chai 0,5l", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Thùng", size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(p4), size: 20 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty4), size: 20 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt4), size: 20 })] })] }) ] }),
+                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "1", size: 18 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${a2.name} (A2)`, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: a2.unit, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(a2.price), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(a2.contractQty), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatCurrency(a2.contractAmount), size: 18 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty2), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt2), size: 18 })] })] }) ] }),
+                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "2", size: 18 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${a1.name} (A1)`, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: a1.unit, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(a1.price), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(a1.contractQty), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatCurrency(a1.contractAmount), size: 18 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty1), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt1), size: 18 })] })] }) ] }),
+                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "3", size: 18 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${a3.name} (A3)`, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: a3.unit, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(a3.price), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(a3.contractQty), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatCurrency(a3.contractAmount), size: 18 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty3), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt3), size: 18 })] })] }) ] }),
+                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "4", size: 18 })] })] }), new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${a4.name} (A4)`, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: a4.unit, size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(a4.price), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(a4.contractQty), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatCurrency(a4.contractAmount), size: 18 })] })] }), new TableCell({ children: [] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: formatNumber(item.qty4), size: 18 })] })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(amt4), size: 18 })] })] }) ] }),
                         new TableRow({
                             children: [
-                                new TableCell({ columnSpan: 7, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tổng cộng", bold: true, size: 20 })] })] }),
-                                new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(totalAmt), bold: true, size: 20 })] })] })
+                                new TableCell({ columnSpan: 5, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tổng cộng", bold: true, size: 18 })] })] }),
+                                new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatCurrency(totalContractAmount), bold: true, size: 18 })] })] }),
+                                new TableCell({ columnSpan: 3, children: [] }),
+                                new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatNumber(totalAmt), bold: true, size: 18 })] })] })
                             ]
                         }),
                         new TableRow({
                             children: [
-                                new TableCell({ columnSpan: 8, children: [new Paragraph({ children: [new TextRun({ text: "Bằng chữ số tiền thanh toán tháng này: ", size: 20 }), new TextRun({ text: totalText, bold: true, size: 20 })] })] })
+                                new TableCell({ columnSpan: 10, children: [new Paragraph({ children: [new TextRun({ text: "Bằng chữ số tiền thanh toán tháng này: ", size: 18 }), new TextRun({ text: totalText, bold: true, size: 18 })] })] })
                             ]
                         })
                     ]
@@ -849,7 +873,6 @@ async function downloadSummaryWordDoc() {
 
     let totalText = docSoThanhChu(totalSumAmt);
 
-    // Hàng tổng cộng
     tableRows.push(
         new TableRow({
             children: [
@@ -867,9 +890,7 @@ async function downloadSummaryWordDoc() {
     const doc = new Document({
         styles: {
             default: {
-                document: {
-                    run: { font: "Times New Roman", size: 26 }
-                }
+                document: { run: { font: "Times New Roman", size: 26 } }
             }
         },
         sections: [{
