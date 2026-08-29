@@ -60,17 +60,19 @@
         .btn-docx { background-color: #1565c0; color: white; }
         .btn-close { background-color: #d32f2f; color: white; }
 
-        /* Style Preview Biên bản chuẩn theo hình ảnh mẫu */
+        /* Style Preview Biên bản chuẩn theo hình ảnh mẫu mới */
         #doc-preview-container {
             font-family: "Times New Roman", Times, serif; color: #000;
             line-height: 1.3; font-size: 13pt; background: #fff; padding: 30px 40px;
         }
-        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 0 0 5px 0; text-transform: uppercase; }
+        .doc-quoc-hieu { text-align: center; font-weight: bold; font-size: 12pt; margin: 0; text-transform: uppercase; }
+        .doc-tieu-ngu { text-align: center; font-weight: bold; font-size: 13pt; margin: 0 0 15px 0; }
+        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 5px 0; text-transform: uppercase; }
         .doc-subtitle { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 20px; display: block; }
         .doc-p { text-align: justify; margin: 8px 0; }
         .doc-indent-p { margin-left: 40px; margin-top: 4px; margin-bottom: 4px; }
-        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt; }
-        .doc-table th, .doc-table td { border: 1px solid #000; padding: 6px; text-align: center; }
+        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10pt; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
         .doc-table th { font-weight: bold; }
         .doc-signatures-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
         .doc-signatures-table td { width: 50%; vertical-align: top; text-align: center; font-size: 13pt; }
@@ -410,8 +412,10 @@ function openDocModal() {
     let totalAmt = amt1 + amt2 + amt3 + amt4;
     let totalText = docSoThanhChu(totalAmt);
 
-    // Trình bày chính xác 100% theo giao diện file Word trong ảnh mẫu
+    // Trình bày chính xác theo đúng cấu trúc hình mẫu số 6 (có quốc hiệu tiêu ngữ và đầy đủ các dấu ngắt dòng ¶)
     let docHTML = `
+        <div class="doc-quoc-hieu">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div class="doc-tieu-ngu">Độc lập - Tự do - Hạnh phúc</div>
         <div class="doc-title">BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG</div>
         <span class="doc-subtitle">(Tháng &nbsp;&nbsp;&nbsp;&nbsp;/2026)</span>
 
@@ -442,13 +446,13 @@ function openDocModal() {
             <thead>
                 <tr>
                     <th style="width: 5%;">STT</th>
-                    <th style="width: 28%;">Danh mục hàng hóa</th>
+                    <th style="width: 25%;">Danh mục hàng hóa</th>
                     <th style="width: 8%;">Đơn vị tính</th>
-                    <th style="width: 10%;">Đơn giá(VND)</th>
+                    <th style="width: 10%;">Đơn giá (VNĐ)</th>
                     <th style="width: 13%;">Số lượng đã bàn giao lũy kế đến tháng trước liền kề</th>
                     <th style="width: 13%;">Số tiền đã thanh toán lũy kế đến tháng trước liền kề</th>
-                    <th style="width: 10%;">Số lượng bàn giao đợt này</th>
-                    <th style="width: 13%;">Số tiền thanh toán đợt này (VND)</th>
+                    <th style="width: 13%;">Số lượng bàn giao đợt này</th>
+                    <th style="width: 13%;">Số tiền thanh toán đợt này (VNĐ)</th>
                 </tr>
             </thead>
             <tbody>
@@ -526,7 +530,7 @@ function closeDocModal() {
     document.getElementById('docModal').style.display = 'none';
 }
 
-/* XUẤT FILE WORD (.DOCX) ĐÚNG 100% CẤU TRÚC TRONG ẢNH MẪU */
+/* XUẤT FILE WORD (.DOCX) ĐÚNG 100% CẤU TRÚC VÀ CÁC DẤU NGẮT ĐOẠN */
 async function downloadWordDoc() {
     if (currentFilteredData.length === 0) return;
     const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } = docx;
@@ -568,7 +572,21 @@ async function downloadWordDoc() {
             children: [
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
-                    spacing: { after: 100 },
+                    spacing: { after: 40 },
+                    children: [
+                        new TextRun({ text: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24 })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 150 },
+                    children: [
+                        new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, size: 26 })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 40 },
                     children: [
                         new TextRun({ text: "BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG", bold: true, size: 28 })
                     ]
@@ -577,7 +595,7 @@ async function downloadWordDoc() {
                     alignment: AlignmentType.CENTER,
                     spacing: { after: 200 },
                     children: [
-                        new TextRun({ text: `(Tháng     /2026)`, bold: true, size: 26 })
+                        new TextRun({ text: "(Tháng     /2026)", bold: true, size: 26 })
                     ]
                 }),
 
@@ -727,7 +745,7 @@ async function downloadWordDoc() {
                                 new TableCell({ children: [new Paragraph({ text: "STT", bold: true, alignment: AlignmentType.CENTER })] }),
                                 new TableCell({ children: [new Paragraph({ text: "Danh mục hàng hóa", bold: true, alignment: AlignmentType.CENTER })] }),
                                 new TableCell({ children: [new Paragraph({ text: "Đơn vị tính", bold: true, alignment: AlignmentType.CENTER })] }),
-                                new TableCell({ children: [new Paragraph({ text: "Đơn giá(VND)", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Đơn giá (VNĐ)", bold: true, alignment: AlignmentType.CENTER })] }),
                                 new TableCell({ children: [new Paragraph({ text: "Số lượng lũy kế", bold: true, alignment: AlignmentType.CENTER })] }),
                                 new TableCell({ children: [new Paragraph({ text: "Số tiền lũy kế", bold: true, alignment: AlignmentType.CENTER })] }),
                                 new TableCell({ children: [new Paragraph({ text: "Số lượng bàn giao", bold: true, alignment: AlignmentType.CENTER })] }),
@@ -853,7 +871,7 @@ async function downloadWordDoc() {
     });
 
     Packer.toBlob(doc).then(blob => {
-        saveAs(blob, `Bien_Ban_Nghiang_Thu_${item.unit}_Thang_${monthOnly}.docx`);
+        saveAs(blob, `Bien_Ban_Nghiem_Thu_${item.unit}_Thang_${monthOnly}.docx`);
     });
 }
 </script>
