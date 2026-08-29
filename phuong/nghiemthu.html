@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
+    <!-- Nhập thư viện đọc file Excel SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #1b5e20;
+            margin-bottom: 20px;
+        }
+        .upload-box {
+            background: #e8f5e9;
+            border: 2px dashed #2e7d32;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .upload-box label {
+            font-weight: bold;
+            color: #1b5e20;
+        }
+        .upload-box input[type="file"] {
+            padding: 5px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .filter-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #f1f8e9;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        select {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 8px 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #1b5e20;
+            color: white;
+            font-weight: bold;
+        }
+        .sub-header {
+            background-color: #2e7d32;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        /* Style cho 2 hàng tổng */
+        tfoot tr.row-total {
+            background-color: #e8f5e9;
+            font-weight: bold;
+        }
+        tfoot tr.row-limit {
+            background-color: #fff3e0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h2>
+
+    <!-- Khối nạp file Excel từ máy tính -->
+    <div class="upload-box">
+        <label for="excel-file">CHỌN FILE DỮ LIỆU EXCEL (Dang_ki_nuoc.xlsx):</label>
+        <input type="file" id="excel-file" accept=".xlsx, .xls" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="filter-box">
+        <div class="filter-item">
+            <label for="unit-filter"><strong>ĐƠN VỊ:</strong></label>
+            <select id="unit-filter" onchange="applyFilter()">
+                <option value="">-- Tất cả đơn vị --</option>
+            </select>
+        </div>
+        <div class="filter-item">
+            <label for="month-filter"><strong>THÁNG:</strong></label>
+            <select id="month-filter" onchange="applyFilter()">
+                <option value="">-- Tất cả tháng --</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Bảng dữ liệu -->
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="2">STT</th>
+                <th rowspan="2">Tên đơn vị</th>
+                <th rowspan="2">Tháng</th>
+                <th colspan="4" class="sub-header">Số lượng đặt (Bình/Chai)</th>
+                <th colspan="4" class="sub-header">Thành tiền từng loại (VNĐ)</th>
+                <th rowspan="2">Tổng tiền</th>
+            </tr>
+            <tr>
+                <th>Loại 1 (18.5L)</th>
+                <th>Loại 2 (19L)</th>
+                <th>Loại 3 (0.35L)</th>
+                <th>Loại 4 (0.5L)</th>
+                <th>Tiền Loại 1</th>
+                <th>Tiền Loại 2</th>
+                <th>Tiền Loại 3</th>
+                <th>Tiền Loại 4</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <tr>
+                <td colspan="12" style="color:#666; padding:20px;">Vui lòng chọn file <b>Dang_ki_nuoc.xlsx</b> từ máy tính ở trên để xem dữ liệu.</td>
+            </tr>
+        </tbody>
+        <tfoot id="table-foot"></tfoot>
+    </table>
+</div>
+
+<script>
+let priceMap = {}; 
+let allData = [];
+
+// Xử lý khi người dùng chọn file Excel từ máy tính
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+
+            // 1. Đọc sheet "Thong_tin_chung"
+            const sheetThongTinName = workbook.SheetNames.find(name => name.trim().toLowerCase() === "thong_tin_chung");
+            if (sheetThongTinName) {
+                const sheetThongTin = workbook.Sheets[sheetThongTinName];
+                const jsonThongTin = XLSX.utils.sheet_to_json(sheetThongTin, { header: 1 });
+                parsePriceData(jsonThongTin);
+            } else {
+                alert("Không tìm thấy sheet 'Thong_tin_chung' trong file Excel!");
+            }
+
+            // 2. Đọc sheet "So_luong_dat"
+            const sheetSoLuongName = workbook.SheetNames.find(name => name.trim().toLowerCase() === "so_luong_dat");
+            if (sheetSoLuongName) {
+                const sheetSoLuong = workbook.Sheets[sheetSoLuongName];
+                const jsonSoLuong = XLSX.utils.sheet_to_json(sheetSoLuong, { header: 1 });
+                parseOrderData(jsonSoLuong);
+            } else {
+                alert("Không tìm thấy sheet 'So_luong_dat' trong file Excel!");
+            }
+
+            // Cập nhật các bộ lọc và hiển thị bảng
+            populateFilters();
+            applyFilter();
+
+        } catch (error) {
+            console.error("Lỗi đọc file Excel:", error);
+            alert("Lỗi đọc file Excel! Vui lòng kiểm tra lại cấu trúc file Dang_ki_nuoc.xlsx");
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// 1. Xử lý dữ liệu bảng Thong_tin_chung
+// Cột 1 (B): Mã loại (A1, A2, A3, A4)
+// Cột 4 (E): Giới hạn số lượng
+// Cột 5 (F): Đơn giá
+// Cột 6 (G): Tiền tối đa
+function parsePriceData(rows) {
+    priceMap = {
+        'A1': { price: 0, limitQty: 0, maxAmount: 0 },
+        'A2': { price: 0, limitQty: 0, maxAmount: 0 },
+        'A3': { price: 0, limitQty: 0, maxAmount: 0 },
+        'A4': { price: 0, limitQty: 0, maxAmount: 0 }
+    };
+
+    for (let i = 1; i < rows.length; i++) {
+        let cols = rows[i];
+        if (!cols || cols.length < 2) continue;
+
+        let key = cols[1] ? String(cols[1]).trim().toUpperCase() : "";
+        if (key && priceMap.hasOwnProperty(key)) {
+            let limitQty = cols[4] ? parseFloat(String(cols[4]).replace(/[^0-9.-]+/g, "")) : 0;
+            let price = cols[5] ? parseFloat(String(cols[5]).replace(/[^0-9.-]+/g, "")) : 0;
+            let maxAmount = cols[6] ? parseFloat(String(cols[6]).replace(/[^0-9.-]+/g, "")) : 0;
+
+            priceMap[key] = {
+                price: isNaN(price) ? 0 : price,
+                limitQty: isNaN(limitQty) ? 0 : limitQty,
+                maxAmount: isNaN(maxAmount) ? 0 : maxAmount
+            };
+        }
+    }
+}
+
+// 2. Xử lý dữ liệu đặt nước từ sheet So_luong_dat
+// Cột 1 (B): Đơn vị
+// Cột 2 (C): Tháng
+// Cột 3->6 (D->G): Số lượng loại 1, 2, 3, 4
+function parseOrderData(rows) {
+    allData = [];
+    for (let i = 1; i < rows.length; i++) {
+        let cols = rows[i];
+        if (!cols || cols.length < 3) continue;
+
+        let unit = cols[1] ? String(cols[1]).trim() : "";
+        let month = cols[2] ? String(cols[2]).trim() : "";
+
+        if (unit || month) {
+            allData.push({
+                unit: unit,
+                month: month,
+                qty1: parseFloat(cols[3]) || 0,
+                qty2: parseFloat(cols[4]) || 0,
+                qty3: parseFloat(cols[5]) || 0,
+                qty4: parseFloat(cols[6]) || 0
+            });
+        }
+    }
+}
+
+// 3. Hiển thị bảng dữ liệu và 2 hàng tổng kết ở tfoot
+function renderTable(dataArray) {
+    const tbody = document.getElementById('table-body');
+    const tfoot = document.getElementById('table-foot');
+    
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+
+    if (!dataArray || dataArray.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:15px;">Không tìm thấy dữ liệu phù hợp.</td></tr>';
+        return;
+    }
+
+    let sumQty1 = 0, sumQty2 = 0, sumQty3 = 0, sumQty4 = 0;
+    let sumAmt1 = 0, sumAmt2 = 0, sumAmt3 = 0, sumAmt4 = 0;
+    let totalAllAmount = 0;
+
+    dataArray.forEach((row, index) => {
+        let amt1 = (row.qty1 || 0) * (priceMap['A1'] ? priceMap['A1'].price : 0);
+        let amt2 = (row.qty2 || 0) * (priceMap['A2'] ? priceMap['A2'].price : 0);
+        let amt3 = (row.qty3 || 0) * (priceMap['A3'] ? priceMap['A3'].price : 0);
+        let amt4 = (row.qty4 || 0) * (priceMap['A4'] ? priceMap['A4'].price : 0);
+        let rowTotal = amt1 + amt2 + amt3 + amt4;
+
+        sumQty1 += (row.qty1 || 0);
+        sumQty2 += (row.qty2 || 0);
+        sumQty3 += (row.qty3 || 0);
+        sumQty4 += (row.qty4 || 0);
+
+        sumAmt1 += amt1;
+        sumAmt2 += amt2;
+        sumAmt3 += amt3;
+        sumAmt4 += amt4;
+        totalAllAmount += rowTotal;
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td style="text-align: left;">${escapeHtml(row.unit)}</td>
+            <td>${escapeHtml(row.month)}</td>
+            <td>${formatNumber(row.qty1)}</td>
+            <td>${formatNumber(row.qty2)}</td>
+            <td>${formatNumber(row.qty3)}</td>
+            <td>${formatNumber(row.qty4)}</td>
+            <td>${formatCurrency(amt1)}</td>
+            <td>${formatCurrency(amt2)}</td>
+            <td>${formatCurrency(amt3)}</td>
+            <td>${formatCurrency(amt4)}</td>
+            <td style="font-weight: bold;">${formatCurrency(rowTotal)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Lấy Giới hạn số lượng (Cột E) & Tiền tối đa (Cột G)
+    let limitA1 = priceMap['A1'] ? priceMap['A1'].limitQty : 0;
+    let limitA2 = priceMap['A2'] ? priceMap['A2'].limitQty : 0;
+    let limitA3 = priceMap['A3'] ? priceMap['A3'].limitQty : 0;
+    let limitA4 = priceMap['A4'] ? priceMap['A4'].limitQty : 0;
+
+    let maxAmtA1 = priceMap['A1'] ? priceMap['A1'].maxAmount : 0;
+    let maxAmtA2 = priceMap['A2'] ? priceMap['A2'].maxAmount : 0;
+    let maxAmtA3 = priceMap['A3'] ? priceMap['A3'].maxAmount : 0;
+    let maxAmtA4 = priceMap['A4'] ? priceMap['A4'].maxAmount : 0;
+
+    let grandTotalMaxAmount = maxAmtA1 + maxAmtA2 + maxAmtA3 + maxAmtA4;
+
+    // Hàng 1: Tổng cộng đăng ký
+    let trTotal = document.createElement('tr');
+    trTotal.className = 'row-total';
+    trTotal.innerHTML = `
+        <td colspan="3" style="text-align: center;">TỔNG CỘNG ĐĂNG KÝ</td>
+        <td>${formatNumber(sumQty1)}</td>
+        <td>${formatNumber(sumQty2)}</td>
+        <td>${formatNumber(sumQty3)}</td>
+        <td>${formatNumber(sumQty4)}</td>
+        <td>${formatCurrency(sumAmt1)}</td>
+        <td>${formatCurrency(sumAmt2)}</td>
+        <td>${formatCurrency(sumAmt3)}</td>
+        <td>${formatCurrency(sumAmt4)}</td>
+        <td style="color: #2e7d32;">${formatCurrency(totalAllAmount)}</td>
+    `;
+
+    // Hàng 2: Số lượng giới hạn / Tiền tối đa
+    let trLimit = document.createElement('tr');
+    trLimit.className = 'row-limit';
+    trLimit.innerHTML = `
+        <td colspan="3" style="text-align: center;">SỐ LƯỢNG GIỚI HẠN / TIỀN TỐI ĐA</td>
+        <td style="color: #d84315;">${formatNumber(limitA1)}</td>
+        <td style="color: #d84315;">${formatNumber(limitA2)}</td>
+        <td style="color: #d84315;">${formatNumber(limitA3)}</td>
+        <td style="color: #d84315;">${formatNumber(limitA4)}</td>
+        <td style="color: #c62828;">${formatCurrency(maxAmtA1)}</td>
+        <td style="color: #c62828;">${formatCurrency(maxAmtA2)}</td>
+        <td style="color: #c62828;">${formatCurrency(maxAmtA3)}</td>
+        <td style="color: #c62828;">${formatCurrency(maxAmtA4)}</td>
+        <td style="color: #c62828; font-size: 1.05em;">${formatCurrency(grandTotalMaxAmount)}</td>
+    `;
+
+    tfoot.appendChild(trTotal);
+    tfoot.appendChild(trLimit);
+}
+
+// 4. Lọc dữ liệu theo Đơn vị và Tháng
+function applyFilter() {
+    const unitVal = document.getElementById('unit-filter').value;
+    const monthVal = document.getElementById('month-filter').value;
+
+    let filtered = allData.filter(item => {
+        let matchUnit = !unitVal || item.unit === unitVal;
+        let matchMonth = !monthVal || item.month === monthVal;
+        return matchUnit && matchMonth;
+    });
+
+    renderTable(filtered);
+}
+
+function populateFilters() {
+    const unitSelect = document.getElementById('unit-filter');
+    const monthSelect = document.getElementById('month-filter');
+
+    let units = [...new Set(allData.map(item => item.unit))].filter(Boolean);
+    let months = [...new Set(allData.map(item => item.month))].filter(Boolean);
+
+    unitSelect.innerHTML = '<option value="">-- Tất cả đơn vị --</option>';
+    units.forEach(u => unitSelect.innerHTML += `<option value="${u}">${u}</option>`);
+
+    monthSelect.innerHTML = '<option value="">-- Tất cả tháng --</option>';
+    months.forEach(m => monthSelect.innerHTML += `<option value="${m}">${m}</option>`);
+}
+
+// Các hàm bổ trợ
+function formatNumber(num) {
+    if (!num || isNaN(num)) return '0';
+    return new Intl.NumberFormat('vi-VN').format(num);
+}
+
+function formatCurrency(amt) {
+    if (!amt || isNaN(amt)) return '0 đ';
+    return new Intl.NumberFormat('vi-VN').format(amt) + ' đ';
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+</script>
+
+</body>
+</html>
