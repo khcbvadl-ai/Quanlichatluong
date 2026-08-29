@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
-    <!-- Thư viện docx.js chính thức tạo file Word chuẩn 100% -->
+    <!-- Thư viện docx.js chính thức tạo file Word chuẩn 100% XML -->
     <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -42,7 +42,6 @@
         .sub-header { background-color: #2e7d32; }
         tbody tr:nth-child(even) { background-color: #f9f9f9; }
         tfoot tr.row-total { background-color: #e8f5e9; font-weight: bold; }
-        tfoot tr.row-limit { background-color: #fff3e0; font-weight: bold; }
 
         /* Styling Modal */
         .modal {
@@ -66,11 +65,12 @@
             font-family: "Times New Roman", Times, serif; color: #000;
             line-height: 1.25; font-size: 13pt; background: #fff; padding: 20px;
         }
-        .doc-header-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .doc-header-table td { vertical-align: top; text-align: center; font-size: 12pt; }
-        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 20px 0; text-transform: uppercase; }
-        .doc-subtitle { font-size: 13pt; font-weight: normal; text-transform: none; display: block; margin-top: 3px; }
-        .doc-p { text-align: justify; margin: 6px 0; text-indent: 0; }
+        .doc-header { text-align: center; font-size: 12pt; margin-bottom: 15px; }
+        .doc-header-title { font-weight: bold; font-size: 12pt; }
+        .doc-header-sub { font-weight: bold; font-size: 13pt; text-decoration: underline; }
+        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 5px 0; text-transform: uppercase; }
+        .doc-subtitle { font-size: 13pt; font-weight: normal; text-transform: none; display: block; font-style: italic; text-align: center; margin-bottom: 15px; }
+        .doc-p { text-align: justify; margin: 6px 0; }
         .doc-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11pt; }
         .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; }
         .doc-table th { font-weight: bold; }
@@ -160,18 +160,14 @@ function loadData() {
         populateFilters();
         applyFilter();
     })
-    .catch(err => {
-        console.error("Lỗi tải dữ liệu:", err);
-    });
+    .catch(err => console.error("Lỗi tải dữ liệu:", err));
 }
 
 function parsePriceData(csvText) {
     let lines = csvText.split(/\r?\n/);
     priceMap = {
-        'A1': { price: 74600, limitQty: 0, maxAmount: 0 },
-        'A2': { price: 81300, limitQty: 0, maxAmount: 0 },
-        'A3': { price: 87000, limitQty: 0, maxAmount: 0 },
-        'A4': { price: 90600, limitQty: 0, maxAmount: 0 }
+        'A1': { price: 74600 }, 'A2': { price: 81300 },
+        'A3': { price: 87000 }, 'A4': { price: 90600 }
     };
     for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
@@ -179,14 +175,8 @@ function parsePriceData(csvText) {
         if (cols.length >= 2) {
             let key = cols[1] ? cols[1].trim().toUpperCase() : "";
             if (key && priceMap.hasOwnProperty(key)) {
-                let limitQty = cols[4] ? parseFloat(cols[4].replace(/[^0-9.-]+/g, "")) : 0;
                 let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : priceMap[key].price;
-                let maxAmount = cols[6] ? parseFloat(cols[6].replace(/[^0-9.-]+/g, "")) : 0;
-                priceMap[key] = {
-                    price: isNaN(price) ? priceMap[key].price : price,
-                    limitQty: isNaN(limitQty) ? 0 : limitQty,
-                    maxAmount: isNaN(maxAmount) ? 0 : maxAmount
-                };
+                priceMap[key].price = isNaN(price) ? priceMap[key].price : price;
             }
         }
     }
@@ -206,10 +196,10 @@ function parseOrderData(csvText) {
                 qty2: parseFloat(cols[4]) || 0,
                 qty3: parseFloat(cols[5]) || 0,
                 qty4: parseFloat(cols[6]) || 0,
-                b1: cols[7] ? cols[7].trim() : "", // Cột H
-                b2: cols[8] ? cols[8].trim() : "", // Cột I
-                b3: cols[9] ? cols[9].trim() : "", // Cột J
-                b4: cols[10] ? cols[10].trim() : "" // Cột K
+                b1: cols[7] ? cols[7].trim() : "", // B1
+                b2: cols[8] ? cols[8].trim() : "", // B2
+                b3: cols[9] ? cols[9].trim() : "", // B3
+                b4: cols[10] ? cols[10].trim() : "" // B4
             });
         }
     }
@@ -298,21 +288,17 @@ function populateFilters() {
     months.forEach(m => monthSelect.innerHTML += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`);
 }
 
-// Xử lý chuẩn chuỗi tháng (tránh bị lặp /2026/2026)
 function getCleanMonth(monthStr) {
     if (!monthStr) return "";
-    let clean = monthStr.toString().replace(/\/2026/g, "").replace(/2026/g, "").trim();
-    return clean;
+    return monthStr.toString().replace(/\/2026/g, "").replace(/2026/g, "").trim();
 }
 
-// 6. XEM TRƯỚC BIÊN BẢN CHUẨN 100% VĂN BẢN GỐC
 function openDocModal() {
     if (currentFilteredData.length === 0) return;
 
     let item = currentFilteredData[0];
     let monthOnly = getCleanMonth(item.month);
     
-    // Gán dữ liệu B1, B2, B3, B4
     let b1 = item.b1 || item.unit;
     let b2 = item.b2 || "";
     let b3 = item.b3 || "";
@@ -323,27 +309,21 @@ function openDocModal() {
     let p3 = priceMap['A3'].price;
     let p4 = priceMap['A4'].price;
 
-    let amt1 = item.qty1 * p1; // Nước vòi 18,5l
-    let amt2 = item.qty2 * p2; // Nước úp 19l
-    let amt3 = item.qty3 * p3; // Chai 0.35l
-    let amt4 = item.qty4 * p4; // Chai 0.5l
+    let amt1 = item.qty1 * p1;
+    let amt2 = item.qty2 * p2;
+    let amt3 = item.qty3 * p3;
+    let amt4 = item.qty4 * p4;
     let totalAmt = amt1 + amt2 + amt3 + amt4;
     let totalText = docSoThanhChu(totalAmt);
 
     let docHTML = `
-        <table class="doc-header-table">
-            <tr>
-                <td style="width: 100%; text-align: center;">
-                    <strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>
-                    <strong><u>Độc lập - Tự do - Hạnh phúc</u></strong>
-                </td>
-            </tr>
-        </table>
-
-        <div class="doc-title">
-            BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG
-            <span class="doc-subtitle">(Tháng ${escapeHtml(monthOnly)}/2026)</span>
+        <div class="doc-header">
+            <span class="doc-header-title">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</span><br>
+            <span class="doc-header-sub">Độc lập - Tự do - Hạnh phúc</span>
         </div>
+
+        <div class="doc-title">BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG</div>
+        <span class="doc-subtitle">(Tháng ${escapeHtml(monthOnly)}/2026)</span>
 
         <p class="doc-p">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
         <p class="doc-p">Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
@@ -456,10 +436,10 @@ function closeDocModal() {
     document.getElementById('docModal').style.display = 'none';
 }
 
-// 7. XUẤT FILE WORD BINARY CHUẨN MỞ MỌI PHIÊN BẢN (dùng docx.js)
+/* XUẤT FILE WORD (.DOCX) ĐÚNG CỠ CHỮ, CĂN LỀ, NGẮT DÒNG CHUẨN NGHỊ ĐỊNH 30/2020 */
 async function downloadWordDoc() {
     if (currentFilteredData.length === 0) return;
-    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, VerticalAlign, BorderStyle } = docx;
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } = docx;
 
     let item = currentFilteredData[0];
     let monthOnly = getCleanMonth(item.month);
@@ -481,89 +461,95 @@ async function downloadWordDoc() {
     let totalAmt = amt1 + amt2 + amt3 + amt4;
     let totalText = docSoThanhChu(totalAmt);
 
+    // Cấu hình File Word Chuẩn Văn Bản Hành Chính
     const doc = new Document({
         styles: {
             default: {
                 document: {
-                    run: { font: "Times New Roman", size: 26 } // 13pt
+                    run: { font: "Times New Roman", size: 26 } // Cỡ 13pt chuẩn
                 }
             }
         },
         sections: [{
             properties: {
                 page: {
-                    margin: { top: 1134, bottom: 1134, left: 1701, right: 850 } // Lề 2-2-3-1.5cm
+                    margin: { 
+                        top: 1134,    // Lề trên 2 cm
+                        bottom: 1134, // Lề dưới 2 cm
+                        left: 1701,   // Lề trái 3 cm
+                        right: 850    // Lề phải 1.5 cm
+                    }
                 }
             },
             children: [
-                // Tiêu ngữ
+                // 1. Quốc hiệu - Tiêu ngữ
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
                     children: [
-                        new TextRun({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24 }),
-                    ]
-                }),
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                        new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, underline: {}, size: 26 }),
-                    ]
-                }),
-                new Paragraph({ text: "", spacing: { after: 200 } }),
-
-                // Tên biên bản
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                        new TextRun({ text: "BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG", bold: true, size: 28 }),
+                        new TextRun({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24 }) // 12pt
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
                     spacing: { after: 200 },
                     children: [
-                        new TextRun({ text: `(Tháng     ${monthOnly}/2026)`, italics: true, size: 26 }),
+                        new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, underline: {}, size: 26 }) // 13pt
                     ]
                 }),
 
-                // Nội dung căn cứ
+                // 2. Tên Biên bản & Tháng
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                        new TextRun({ text: "BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG", bold: true, size: 28 }) // 14pt
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                    children: [
+                        new TextRun({ text: `(Tháng     ${monthOnly}/2026)`, italics: true, size: 26 }) // 13pt Nghiêng
+                    ]
+                }),
+
+                // 3. Căn cứ hợp đồng
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
                         new TextRun("Căn cứ Hợp đồng kinh tế số     /2026/HAN-CH ngày     tháng     năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;")
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
                         new TextRun(`Căn cứ thực tế bàn giao với ${b1} trong tháng.`)
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
-                        new TextRun(`Hôm nay, ngày     tháng    năm 2026, tại ${b1}, địa chỉ: ${b2}, chúng tôi gồm có:`)
+                        new TextRun(`Hôm nay, ngày     tháng     năm 2026, tại ${b1}, địa chỉ: ${b2}, chúng tôi gồm có:`)
                     ]
                 }),
 
-                // Bên A
+                // 4. Bên A (Thuế cơ sở)
                 new Paragraph({
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
-                        new TextRun({ text: `${b1.toUpperCase()}`, bold: true }),
-                        new TextRun(`\nĐịa chỉ: ${b2}\nĐiện thoại: 02438515469\nĐại diện là Ông/ Bà: `),
+                        new TextRun({ text: `${b1.toUpperCase()}\n`, bold: true }),
+                        new TextRun(`Địa chỉ: ${b2}\nĐiện thoại: 02438515469\nĐại diện là Ông/ Bà: `),
                         new TextRun({ text: `${b3}`, bold: true }),
                         new TextRun(`             Chức vụ: `),
                         new TextRun({ text: `${b4}`, bold: true })
                     ]
                 }),
 
-                // Bên B
+                // 5. Bên B (Nhà thầu)
                 new Paragraph({
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
                         new TextRun({ text: "Nhà thầu:\n", bold: true }),
                         new TextRun("Tên nhà thầu: "), new TextRun({ text: "CÔNG TY CỔ PHẦN IN HÀ NỘI\n", bold: true }),
@@ -575,21 +561,22 @@ async function downloadWordDoc() {
 
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
                         new TextRun(`Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${b1} như sau:`)
                     ]
                 }),
 
                 new Paragraph({
-                    spacing: { after: 100 },
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 120, line: 276 },
                     children: [
                         new TextRun({ text: "1. Nội dung nghiệm thu:\n", bold: true }),
                         new TextRun(`Trong tháng       ${monthOnly}/2026, nhà thầu đã bàn giao cho ${b1} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:`)
                     ]
                 }),
 
-                // Bảng dữ liệu 8 cột
+                // 6. Bảng nghiệm thu chuẩn 8 cột
                 new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },
                     rows: [
@@ -667,30 +654,30 @@ async function downloadWordDoc() {
                     ]
                 }),
 
-                new Paragraph({ text: "", spacing: { after: 100 } }),
+                new Paragraph({ text: "", spacing: { after: 120 } }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
                         new TextRun("Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.")
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 100 },
+                    spacing: { after: 120, line: 276 },
                     children: [
                         new TextRun({ text: "2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.", bold: true })
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 200 },
+                    spacing: { after: 200, line: 276 },
                     children: [
                         new TextRun("Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.")
                     ]
                 }),
 
-                // Khối Chữ ký (Bảng ẩn border)
+                // 7. Chữ ký chia 2 bên
                 new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },
                     borders: {
@@ -712,7 +699,7 @@ async function downloadWordDoc() {
                                     children: [
                                         new Paragraph({ text: "ĐẠI DIỆN BÊN B", bold: true, alignment: AlignmentType.CENTER }),
                                         new Paragraph({ text: "TỔNG GIÁM ĐỐC", bold: true, alignment: AlignmentType.CENTER }),
-                                        new Paragraph({ text: "\n\n\n" }),
+                                        new Paragraph({ text: "\n\n\n\n" }),
                                         new Paragraph({ text: "Nguyễn Thị Oanh", bold: true, alignment: AlignmentType.CENTER }),
                                     ]
                                 })
