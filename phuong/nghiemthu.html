@@ -1,23 +1,886 @@
-new Paragraph({
-    alignment: AlignmentType.JUSTIFY,
-    indent: { firstLine: 567 },
-    spacing: { after: 100, line: 276 },
-    children: [
-        new TextRun(`Căn cứ thực tế bàn giao với ${b1} trong tháng.`)
-    ]
-}),
-new Paragraph({
-    alignment: AlignmentType.JUSTIFY,
-    indent: { firstLine: 567 },
-    spacing: { after: 100, line: 276 },
-    children: [
-        new TextRun(`Hôm nay, ngày     tháng     năm 2026, tại ${b1}, địa chỉ: ${b2}, chúng tôi gồm có:`)
-    ]
-}),
-new Paragraph({
-    indent: { left: 567 },
-    spacing: { after: 60, line: 240 },
-    children: [
-        new TextRun({ text: `${b1Upper}`, bold: true })
-    ]
-}),
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
+    <!-- Thư viện docx.js tạo file Word chuẩn XML -->
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; color: #1b5e20; margin-bottom: 20px; }
+        .filter-box {
+            display: flex; gap: 15px; margin-bottom: 20px; background: #f1f8e9;
+            padding: 15px; border-radius: 6px; align-items: center; flex-wrap: wrap;
+        }
+        .filter-item { display: flex; align-items: center; gap: 8px; }
+        select { padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-create {
+            background-color: #2e7d32; color: white; border: none; padding: 8px 16px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s;
+        }
+        .btn-create:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .btn-create:hover:not(:disabled) { background-color: #1b5e20; }
+        
+        table.main-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table.main-table th, table.main-table td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: center; }
+        table.main-table th { background-color: #1b5e20; color: white; font-weight: bold; }
+        .sub-header { background-color: #2e7d32; }
+        tbody tr:nth-child(even) { background-color: #f9f9f9; }
+        tfoot tr.row-total { background-color: #e8f5e9; font-weight: bold; }
+
+        /* Styling Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        .modal-content {
+            background-color: #fff; margin: 30px auto; padding: 20px 40px;
+            width: 800px; max-width: 90%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .modal-actions {
+            display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;
+            padding-bottom: 10px; border-bottom: 1px solid #eee;
+        }
+        .btn-action { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-docx { background-color: #1565c0; color: white; }
+        .btn-close { background-color: #d32f2f; color: white; }
+
+        /* Style Preview Biên bản chuẩn */
+        #doc-preview-container {
+            font-family: "Times New Roman", Times, serif; color: #000;
+            line-height: 1.3; font-size: 13pt; background: #fff; padding: 30px 40px;
+        }
+        .doc-quoc-hieu { text-align: center; font-weight: bold; font-size: 12pt; margin: 0; text-transform: uppercase; }
+        .doc-tieu-ngu { text-align: center; font-weight: bold; font-size: 13pt; margin: 0 0 15px 0; }
+        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 5px 0; text-transform: uppercase; }
+        .doc-subtitle { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 20px; display: block; }
+        .doc-p { text-align: justify; margin: 8px 0; }
+        .doc-indent-p { margin-left: 40px; margin-top: 4px; margin-bottom: 4px; }
+        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10pt; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
+        .doc-table th { font-weight: bold; }
+        .doc-signatures-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+        .doc-signatures-table td { width: 50%; vertical-align: top; text-align: center; font-size: 13pt; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h2>
+
+    <div class="filter-box">
+        <div class="filter-item">
+            <label for="unit-filter"><strong>ĐƠN VỊ:</strong></label>
+            <select id="unit-filter" onchange="applyFilter()">
+                <option value="">-- Tất cả đơn vị --</option>
+            </select>
+        </div>
+        <div class="filter-item">
+            <label for="month-filter"><strong>THÁNG:</strong></label>
+            <select id="month-filter" onchange="applyFilter()">
+                <option value="">-- Tất cả tháng --</option>
+            </select>
+        </div>
+        <button id="btn-create-doc" class="btn-create" disabled onclick="openDocModal()">Tạo biên bản</button>
+    </div>
+
+    <table class="main-table">
+        <thead>
+            <tr>
+                <th rowspan="2">STT</th>
+                <th rowspan="2">Tên đơn vị</th>
+                <th rowspan="2">Tháng</th>
+                <th colspan="4" class="sub-header">Số lượng đặt (Bình/Chai)</th>
+                <th colspan="4" class="sub-header">Thành tiền từng loại (VNĐ)</th>
+                <th rowspan="2">Tổng tiền</th>
+            </tr>
+            <tr>
+                <th>Loại 1 (18.5L)</th>
+                <th>Loại 2 (19L)</th>
+                <th>Loại 3 (0.35L)</th>
+                <th>Loại 4 (0.5L)</th>
+                <th>Tiền Loại 1</th>
+                <th>Tiền Loại 2</th>
+                <th>Tiền Loại 3</th>
+                <th>Tiền Loại 4</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <tr><td colspan="12">Đang tải dữ liệu...</td></tr>
+        </tbody>
+        <tfoot id="table-foot"></tfoot>
+    </table>
+</div>
+
+<div id="docModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-actions">
+            <button class="btn-action btn-docx" onclick="downloadWordDoc()">Tải file Word (.docx)</button>
+            <button class="btn-action btn-close" onclick="closeDocModal()">Đóng</button>
+        </div>
+        <div id="doc-preview-container"></div>
+    </div>
+</div>
+
+<script>
+let priceMap = {}; 
+let allData = [];
+let currentFilteredData = [];
+
+const SHEET_ID = "1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w"; 
+const SHEET_SO_LUONG = "So_luong_dat";
+const SHEET_THONG_TIN = "Thong_tin_chung";
+
+function formatNumber(num) {
+    if (num === null || num === undefined || isNaN(num) || num === 0) return "";
+    return new Intl.NumberFormat('vi-VN').format(num);
+}
+
+function formatCurrency(num) {
+    if (num === null || num === undefined || isNaN(num)) return "0";
+    return new Intl.NumberFormat('vi-VN').format(num);
+}
+
+function escapeHtml(text) {
+    if (!text) return "";
+    return text.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function parseCSVLine(line) {
+    let result = [];
+    let insideQuote = false;
+    let entry = '';
+    for (let i = 0; i < line.length; i++) {
+        let c = line[i];
+        if (c === '"') {
+            insideQuote = !insideQuote;
+        } else if (c === ',' && !insideQuote) {
+            result.push(entry.trim().replace(/^"|"$/g, ''));
+            entry = '';
+        } else {
+            entry += c;
+        }
+    }
+    result.push(entry.trim().replace(/^"|"$/g, ''));
+    return result;
+}
+
+function docSoThanhChu(so) {
+    if (!so || isNaN(so) || so === 0) return "Không đồng";
+    const chuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+    
+    function readGroup(group) {
+        let read = "";
+        let trăm = Math.floor(group / 100);
+        let chục = Math.floor((group % 100) / 10);
+        let đơnVị = group % 10;
+        
+        if (trăm > 0 || chục > 0 || đơnVị > 0) {
+            read += chuSo[trăm] + " trăm ";
+        }
+        if (chục > 1) {
+            read += chuSo[chục] + " mươi ";
+            if (đơnVị === 1) read += "mốt ";
+            else if (đơnVị === 5) read += "lăm ";
+            else if (đơnVị > 0) read += chuSo[đơnVị] + " ";
+        } else if (chục === 1) {
+            read += "mười ";
+            if (đơnVị === 1) read += "mốt ";
+            else if (đơnVị === 5) read += "lăm ";
+            else if (đơnVị > 0) read += chuSo[đơnVị] + " ";
+        } else if (chục === 0 && đơnVị > 0) {
+            if (trăm > 0) read += "lẻ ";
+            read += chuSo[đơnVị] + " ";
+        }
+        return read;
+    }
+
+    let temp = Math.abs(so);
+    let result = "";
+    let units = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+    let unitIdx = 0;
+
+    while (temp > 0) {
+        let group = temp % 1000;
+        if (group > 0) {
+            let strGroup = readGroup(group);
+            result = strGroup + units[unitIdx] + " " + result;
+        }
+        temp = Math.floor(temp / 1000);
+        unitIdx++;
+    }
+
+    result = result.trim();
+    if (result.length > 0) {
+        result = result.charAt(0).toUpperCase() + result.slice(1) + " đồng chẵn.";
+    }
+    return result;
+}
+
+document.addEventListener("DOMContentLoaded", loadData);
+
+function loadData() {
+    const urlSoLuong = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_SO_LUONG)}`;
+    const urlThongTin = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_THONG_TIN)}`;
+
+    Promise.all([
+        fetch(urlThongTin).then(res => res.text()),
+        fetch(urlSoLuong).then(res => res.text())
+    ])
+    .then(([csvThongTin, csvSoLuong]) => {
+        parsePriceData(csvThongTin);
+        parseOrderData(csvSoLuong);
+        populateFilters();
+        applyFilter();
+    })
+    .catch(err => {
+        console.error("Lỗi tải dữ liệu:", err);
+        document.getElementById('table-body').innerHTML = '<tr><td colspan="12">Lỗi không thể tải dữ liệu từ Google Sheet.</td></tr>';
+    });
+}
+
+function parsePriceData(csvText) {
+    let lines = csvText.split(/\r?\n/);
+    priceMap = {
+        'A1': { price: 74600 }, 'A2': { price: 81300 },
+        'A3': { price: 87000 }, 'A4': { price: 90600 }
+    };
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        let cols = parseCSVLine(lines[i]);
+        if (cols.length >= 2) {
+            let key = cols[1] ? cols[1].trim().toUpperCase() : "";
+            if (key && priceMap.hasOwnProperty(key)) {
+                let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : priceMap[key].price;
+                priceMap[key].price = isNaN(price) ? priceMap[key].price : price;
+            }
+        }
+    }
+}
+
+function parseOrderData(csvText) {
+    let lines = csvText.split(/\r?\n/);
+    allData = [];
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        let cols = parseCSVLine(lines[i]);
+        if (cols.length >= 7) {
+            allData.push({
+                unit: cols[1] ? cols[1].trim() : "",
+                month: cols[2] ? cols[2].trim() : "",
+                qty1: parseFloat(cols[3]) || 0,
+                qty2: parseFloat(cols[4]) || 0,
+                qty3: parseFloat(cols[5]) || 0,
+                qty4: parseFloat(cols[6]) || 0,
+                b1: cols[7] ? cols[7].trim() : "", 
+                b2: cols[8] ? cols[8].trim() : "", 
+                b3: cols[9] ? cols[9].trim() : "", 
+                b4: cols[10] ? cols[10].trim() : "" 
+            });
+        }
+    }
+}
+
+function renderTable(dataArray) {
+    const tbody = document.getElementById('table-body');
+    const tfoot = document.getElementById('table-foot');
+    tbody.innerHTML = ''; tfoot.innerHTML = '';
+
+    if (!dataArray || dataArray.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12">Không tìm thấy dữ liệu.</td></tr>';
+        return;
+    }
+
+    let sumQty1 = 0, sumQty2 = 0, sumQty3 = 0, sumQty4 = 0;
+    let sumAmt1 = 0, sumAmt2 = 0, sumAmt3 = 0, sumAmt4 = 0;
+    let totalAllAmount = 0;
+
+    dataArray.forEach((row, index) => {
+        let amt1 = row.qty1 * priceMap['A1'].price;
+        let amt2 = row.qty2 * priceMap['A2'].price;
+        let amt3 = row.qty3 * priceMap['A3'].price;
+        let amt4 = row.qty4 * priceMap['A4'].price;
+        let rowTotal = amt1 + amt2 + amt3 + amt4;
+
+        sumQty1 += row.qty1; sumQty2 += row.qty2; sumQty3 += row.qty3; sumQty4 += row.qty4;
+        sumAmt1 += amt1; sumAmt2 += amt2; sumAmt3 += amt3; sumAmt4 += amt4;
+        totalAllAmount += rowTotal;
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td style="text-align: left;">${escapeHtml(row.unit)}</td>
+            <td>${escapeHtml(row.month)}</td>
+            <td>${formatNumber(row.qty1)}</td>
+            <td>${formatNumber(row.qty2)}</td>
+            <td>${formatNumber(row.qty3)}</td>
+            <td>${formatNumber(row.qty4)}</td>
+            <td>${formatCurrency(amt1)}</td>
+            <td>${formatCurrency(amt2)}</td>
+            <td>${formatCurrency(amt3)}</td>
+            <td>${formatCurrency(amt4)}</td>
+            <td style="font-weight: bold;">${formatCurrency(rowTotal)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    let trTotal = document.createElement('tr');
+    trTotal.className = 'row-total';
+    trTotal.innerHTML = `
+        <td colspan="3">TỔNG CỘNG ĐĂNG KÝ</td>
+        <td>${formatNumber(sumQty1)}</td><td>${formatNumber(sumQty2)}</td>
+        <td>${formatNumber(sumQty3)}</td><td>${formatNumber(sumQty4)}</td>
+        <td>${formatCurrency(sumAmt1)}</td><td>${formatCurrency(sumAmt2)}</td>
+        <td>${formatCurrency(sumAmt3)}</td><td>${formatCurrency(sumAmt4)}</td>
+        <td style="color: #2e7d32;">${formatCurrency(totalAllAmount)}</td>
+    `;
+    tfoot.appendChild(trTotal);
+}
+
+function applyFilter() {
+    const unitVal = document.getElementById('unit-filter').value;
+    const monthVal = document.getElementById('month-filter').value;
+
+    currentFilteredData = allData.filter(item => {
+        let matchUnit = !unitVal || item.unit === unitVal;
+        let matchMonth = !monthVal || item.month === monthVal;
+        return matchUnit && matchMonth;
+    });
+
+    renderTable(currentFilteredData);
+    document.getElementById('btn-create-doc').disabled = !(unitVal !== "" && monthVal !== "" && currentFilteredData.length > 0);
+}
+
+function populateFilters() {
+    const unitSelect = document.getElementById('unit-filter');
+    const monthSelect = document.getElementById('month-filter');
+    let units = [...new Set(allData.map(item => item.unit))].filter(Boolean);
+    let months = [...new Set(allData.map(item => item.month))].filter(Boolean);
+
+    unitSelect.innerHTML = '<option value="">-- Tất cả đơn vị --</option>';
+    units.forEach(u => unitSelect.innerHTML += `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`);
+
+    monthSelect.innerHTML = '<option value="">-- Tất cả tháng --</option>';
+    months.forEach(m => monthSelect.innerHTML += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`);
+}
+
+function getCleanMonth(monthStr) {
+    if (!monthStr) return "";
+    return monthStr.toString().replace(/\/2026/g, "").replace(/2026/g, "").trim();
+}
+
+function openDocModal() {
+    if (currentFilteredData.length === 0) return;
+
+    let item = currentFilteredData[0];
+    let monthOnly = getCleanMonth(item.month);
+    
+    // Nối thêm chữ mặc định "Thuế cơ sở số"
+    let b1Raw = item.b1 || item.unit;
+    let b1 = "Thuế cơ sở số " + b1Raw;
+    let b1Upper = "THUẾ CƠ SỞ SỐ " + b1Raw;
+
+    let b2 = item.b2 || "";
+    let b3 = item.b3 || "";
+    let b4 = item.b4 || "";
+
+    let p1 = priceMap['A1'].price;
+    let p2 = priceMap['A2'].price;
+    let p3 = priceMap['A3'].price;
+    let p4 = priceMap['A4'].price;
+
+    let amt1 = item.qty1 * p1;
+    let amt2 = item.qty2 * p2;
+    let amt3 = item.qty3 * p3;
+    let amt4 = item.qty4 * p4;
+    let totalAmt = amt1 + amt2 + amt3 + amt4;
+    let totalText = docSoThanhChu(totalAmt);
+
+    let docHTML = `
+        <div class="doc-quoc-hieu">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div class="doc-tieu-ngu">Độc lập - Tự do - Hạnh phúc</div>
+        <div class="doc-title">BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG</div>
+        <span class="doc-subtitle">(Tháng &nbsp;&nbsp;&nbsp;&nbsp;/2026)</span>
+
+        <p class="doc-p" style="text-indent: 40px;">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
+        <p class="doc-p" style="text-indent: 40px;">Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
+        <p class="doc-p" style="text-indent: 40px;">Hôm nay, ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:</p>
+        
+        <p class="doc-indent-p"><strong>${escapeHtml(b1Upper)}</strong></p>
+        <p class="doc-indent-p">Địa chỉ: ${escapeHtml(b2)}</p>
+        <p class="doc-indent-p">Điện thoại: 02438515469</p>
+        <p class="doc-indent-p">Đại diện là Ông/ Bà: ${escapeHtml(b3)} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: ${escapeHtml(b4)}</p>
+
+        <p class="doc-indent-p" style="margin-top: 10px;"><strong>Nhà thầu:</strong></p>
+        <p class="doc-indent-p">Tên nhà thầu: <strong>CÔNG TY CỔ PHẦN IN HÀ NỘI</strong></p>
+        <p class="doc-indent-p">Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội</p>
+        <p class="doc-indent-p">Điện thoại: 024. 39437063</p>
+        <p class="doc-indent-p">Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng</p>
+        <p class="doc-indent-p">Mã số thuế: 0101181842</p>
+        <p class="doc-indent-p">Đại diện là Bà: Nguyễn Thị Oanh</p>
+        <p class="doc-indent-p">Chức vụ: Tổng giám đốc</p>
+
+        <p class="doc-p" style="text-indent: 40px; margin-top: 15px;">Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
+
+        <p class="doc-p" style="text-indent: 40px;"><strong>1. Nội dung nghiệm thu:</strong></p>
+        <p class="doc-p" style="text-indent: 40px;">Trong tháng &nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(monthOnly)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
+
+        <table class="doc-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">STT</th>
+                    <th style="width: 25%;">Danh mục hàng hóa</th>
+                    <th style="width: 8%;">Đơn vị tính</th>
+                    <th style="width: 10%;">Đơn giá (VNĐ)</th>
+                    <th style="width: 13%;">Số lượng đã bàn giao lũy kế đến tháng trước liền kề</th>
+                    <th style="width: 13%;">Số tiền đã thanh toán lũy kế đến tháng trước liền kề</th>
+                    <th style="width: 13%;">Số lượng bàn giao đợt này</th>
+                    <th style="width: 13%;">Số tiền thanh toán đợt này (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình úp 19l</td>
+                    <td>Bình</td>
+                    <td style="text-align: right;">${formatNumber(p1)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty2)}</td>
+                    <td style="text-align: right;">${formatNumber(amt2)}</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình vòi 18,5l</td>
+                    <td>Bình</td>
+                    <td style="text-align: right;">${formatNumber(p2)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty1)}</td>
+                    <td style="text-align: right;">${formatNumber(amt1)}</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,35l</td>
+                    <td>Thùng</td>
+                    <td style="text-align: right;">${formatNumber(p3)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty3)}</td>
+                    <td style="text-align: right;">${formatNumber(amt3)}</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,5l</td>
+                    <td>Thùng</td>
+                    <td style="text-align: right;">${formatNumber(p4)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty4)}</td>
+                    <td style="text-align: right;">${formatNumber(amt4)}</td>
+                </tr>
+                <tr style="font-weight: bold;">
+                    <td colspan="7" style="text-align: center;">Tổng cộng</td>
+                    <td style="text-align: right;">${formatNumber(totalAmt)}</td>
+                </tr>
+                <tr>
+                    <td colspan="8" style="text-align: left;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p class="doc-p" style="text-indent: 40px;">Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
+        <p class="doc-p" style="text-indent: 40px;"><strong>2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</strong></p>
+        <p class="doc-p" style="text-indent: 40px;">Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
+
+        <table class="doc-signatures-table">
+            <tr>
+                <td>
+                    <strong>ĐẠI DIỆN BÊN A</strong><br>
+                    <strong>KT. TRƯỞNG THUẾ CƠ SỞ</strong><br>
+                    <strong>PHÓ TRƯỞNG THUẾ CƠ SỞ</strong>
+                </td>
+                <td>
+                    <strong>ĐẠI DIỆN BÊN B</strong><br>
+                    <strong>TỔNG GIÁM ĐỐC</strong><br><br><br><br><br>
+                    <strong>Nguyễn Thị Oanh</strong>
+                </td>
+            </tr>
+        </table>
+    `;
+
+    document.getElementById('doc-preview-container').innerHTML = docHTML;
+    document.getElementById('docModal').style.display = 'block';
+}
+
+function closeDocModal() {
+    document.getElementById('docModal').style.display = 'none';
+}
+
+/* XUẤT FILE WORD (.DOCX) ĐÚNG 100% CẤU TRÚC VÀ TỰ ĐỘNG THÊM "THUẾ CƠ SỞ SỐ" */
+async function downloadWordDoc() {
+    if (currentFilteredData.length === 0) return;
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } = docx;
+
+    let item = currentFilteredData[0];
+    let monthOnly = getCleanMonth(item.month);
+
+    // Nối thêm chữ mặc định "Thuế cơ sở số"
+    let b1Raw = item.b1 || item.unit;
+    let b1 = "Thuế cơ sở số " + b1Raw;
+    let b1Upper = "THUẾ CƠ SỞ SỐ " + b1Raw;
+
+    let b2 = item.b2 || "";
+    let b3 = item.b3 || "";
+    let b4 = item.b4 || "";
+
+    let p1 = priceMap['A1'].price;
+    let p2 = priceMap['A2'].price;
+    let p3 = priceMap['A3'].price;
+    let p4 = priceMap['A4'].price;
+
+    let amt1 = item.qty1 * p1;
+    let amt2 = item.qty2 * p2;
+    let amt3 = item.qty3 * p3;
+    let amt4 = item.qty4 * p4;
+    let totalAmt = amt1 + amt2 + amt3 + amt4;
+    let totalText = docSoThanhChu(totalAmt);
+
+    const doc = new Document({
+        styles: {
+            default: {
+                document: {
+                    run: { font: "Times New Roman", size: 26 } // 13pt
+                }
+            }
+        },
+        sections: [{
+            properties: {
+                page: {
+                    margin: { top: 1134, bottom: 1134, left: 1701, right: 850 }
+                }
+            },
+            children: [
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 40 },
+                    children: [
+                        new TextRun({ text: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24 })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 150 },
+                    children: [
+                        new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, size: 26 })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 40 },
+                    children: [
+                        new TextRun({ text: "BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG", bold: true, size: 28 })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                    children: [
+                        new TextRun({ text: "(Tháng     /2026)", bold: true, size: 26 })
+                    ]
+                }),
+
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
+                    children: [
+                        new TextRun("Căn cứ Hợp đồng kinh tế số     /2026/HAN-CH ngày     tháng     năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;")
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
+                    children: [
+                        new TextRun(`Căn cứ thực tế bàn giao với ${b1} trong tháng.`)
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
+                    children: [
+                        new TextRun(`Hôm nay, ngày     tháng     năm 2026, tại ${b1}, địa chỉ: ${b2}, chúng tôi gồm có:`)
+                    ]
+                }),
+
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun({ text: `${b1Upper}`, bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun(`Địa chỉ: ${b2}`)
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Điện thoại: 02438515469")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 120, line: 240 },
+                    children: [
+                        new TextRun(`Đại diện là Ông/ Bà: ${b3}            Chức vụ: ${b4}`)
+                    ]
+                }),
+
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun({ text: "Nhà thầu:", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Tên nhà thầu: "),
+                        new TextRun({ text: "CÔNG TY CỔ PHẦN IN HÀ NỘI", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Điện thoại: 024. 39437063")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Mã số thuế: 0101181842")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Đại diện là Bà: Nguyễn Thị Oanh")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 120, line: 240 },
+                    children: [
+                        new TextRun("Chức vụ: Tổng giám đốc")
+                    ]
+                }),
+
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
+                    children: [
+                        new TextRun(`Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${b1} như sau:`)
+                    ]
+                }),
+
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 60, line: 276 },
+                    children: [
+                        new TextRun({ text: "1. Nội dung nghiệm thu:", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 120, line: 276 },
+                    children: [
+                        new TextRun(`Trong tháng     ${monthOnly}/2026, nhà thầu đã bàn giao cho ${b1} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:`)
+                    ]
+                }),
+
+                new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: [
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "STT", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Danh mục hàng hóa", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Đơn vị tính", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Đơn giá (VNĐ)", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số lượng lũy kế", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số tiền lũy kế", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số lượng bàn giao", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số tiền thanh toán", bold: true, alignment: AlignmentType.CENTER })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "1", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng bình úp 19l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Bình", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p1), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty2), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt2), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "2", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng bình vòi 18,5l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Bình", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p2), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty1), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt1), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "3", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng chai 0,35l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Thùng", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p3), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty3), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt3), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "4", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng chai 0,5l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Thùng", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p4), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty4), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt4), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ columnSpan: 7, children: [new Paragraph({ text: "Tổng cộng", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(totalAmt), bold: true, alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        })
+                    ]
+                }),
+
+                new Paragraph({
+                    indent: { firstLine: 567 },
+                    spacing: { before: 100, after: 100 },
+                    children: [
+                        new TextRun({ text: "Bằng chữ số tiền thanh toán tháng này: " }),
+                        new TextRun({ text: `${totalText}`, bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
+                    children: [
+                        new TextRun("Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.")
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 60, line: 276 },
+                    children: [
+                        new TextRun({ text: "2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 200, line: 276 },
+                    children: [
+                        new TextRun("Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.")
+                    ]
+                }),
+
+                new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: [
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    children: [
+                                        new Paragraph({ text: "ĐẠI DIỆN BÊN A", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "KT. TRƯỞNG THUẾ CƠ SỞ", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "PHÓ TRƯỞNG THUẾ CƠ SỞ", bold: true, alignment: AlignmentType.CENTER })
+                                    ]
+                                }),
+                                new TableCell({
+                                    children: [
+                                        new Paragraph({ text: "ĐẠI DIỆN BÊN B", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "TỔNG GIÁM ĐỐC", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "\n\n\n" }),
+                                        new Paragraph({ text: "Nguyễn Thị Oanh", bold: true, alignment: AlignmentType.CENTER })
+                                    ]
+                                })
+                            ]
+                        })
+                    ]
+                })
+            ]
+        }]
+    });
+
+    Packer.toBlob(doc).then(blob => {
+        saveAs(blob, `Bien_Ban_Nghiem_Thu_${item.unit}_Thang_${monthOnly}.docx`);
+    });
+}
+</script>
+</body>
+</html>
