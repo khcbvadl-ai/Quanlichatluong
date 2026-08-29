@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
-    <!-- Thư viện docx.js chính thức tạo file Word chuẩn XML -->
+    <!-- Thư viện docx.js tạo file Word chuẩn XML -->
     <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -60,21 +60,19 @@
         .btn-docx { background-color: #1565c0; color: white; }
         .btn-close { background-color: #d32f2f; color: white; }
 
-        /* Style Preview Biên bản */
+        /* Style Preview Biên bản chuẩn theo hình ảnh mẫu */
         #doc-preview-container {
             font-family: "Times New Roman", Times, serif; color: #000;
-            line-height: 1.25; font-size: 13pt; background: #fff; padding: 20px;
+            line-height: 1.3; font-size: 13pt; background: #fff; padding: 30px 40px;
         }
-        .doc-header { text-align: center; font-size: 12pt; margin-bottom: 15px; }
-        .doc-header-title { font-weight: bold; font-size: 12pt; }
-        .doc-header-sub { font-weight: bold; font-size: 13pt; text-decoration: underline; }
-        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 5px 0; text-transform: uppercase; }
-        .doc-subtitle { font-size: 13pt; font-weight: normal; text-transform: none; display: block; font-style: italic; text-align: center; margin-bottom: 15px; }
-        .doc-p { text-align: justify; margin: 6px 0; }
-        .doc-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11pt; }
-        .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; }
+        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 0 0 5px 0; text-transform: uppercase; }
+        .doc-subtitle { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 20px; display: block; }
+        .doc-p { text-align: justify; margin: 8px 0; }
+        .doc-indent-p { margin-left: 40px; margin-top: 4px; margin-bottom: 4px; }
+        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 6px; text-align: center; }
         .doc-table th { font-weight: bold; }
-        .doc-signatures-table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        .doc-signatures-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
         .doc-signatures-table td { width: 50%; vertical-align: top; text-align: center; font-size: 13pt; }
     </style>
 </head>
@@ -146,7 +144,6 @@ const SHEET_ID = "1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w";
 const SHEET_SO_LUONG = "So_luong_dat";
 const SHEET_THONG_TIN = "Thong_tin_chung";
 
-// Các hàm tiện ích hỗ trợ định dạng
 function formatNumber(num) {
     if (num === null || num === undefined || isNaN(num) || num === 0) return "";
     return new Intl.NumberFormat('vi-VN').format(num);
@@ -186,7 +183,6 @@ function parseCSVLine(line) {
     return result;
 }
 
-// Hàm đọc số thành chữ
 function docSoThanhChu(so) {
     if (!so || isNaN(so) || so === 0) return "Không đồng";
     const chuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
@@ -294,10 +290,10 @@ function parseOrderData(csvText) {
                 qty2: parseFloat(cols[4]) || 0,
                 qty3: parseFloat(cols[5]) || 0,
                 qty4: parseFloat(cols[6]) || 0,
-                b1: cols[7] ? cols[7].trim() : "", // B1
-                b2: cols[8] ? cols[8].trim() : "", // B2
-                b3: cols[9] ? cols[9].trim() : "", // B3
-                b4: cols[10] ? cols[10].trim() : "" // B4
+                b1: cols[7] ? cols[7].trim() : "", 
+                b2: cols[8] ? cols[8].trim() : "", 
+                b3: cols[9] ? cols[9].trim() : "", 
+                b4: cols[10] ? cols[10].trim() : "" 
             });
         }
     }
@@ -414,37 +410,33 @@ function openDocModal() {
     let totalAmt = amt1 + amt2 + amt3 + amt4;
     let totalText = docSoThanhChu(totalAmt);
 
+    // Trình bày chính xác 100% theo giao diện file Word trong ảnh mẫu
     let docHTML = `
-        <div class="doc-header">
-            <span class="doc-header-title">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</span><br>
-            <span class="doc-header-sub">Độc lập - Tự do - Hạnh phúc</span>
-        </div>
-
         <div class="doc-title">BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG</div>
-        <span class="doc-subtitle">(Tháng ${escapeHtml(monthOnly)}/2026)</span>
+        <span class="doc-subtitle">(Tháng &nbsp;&nbsp;&nbsp;&nbsp;/2026)</span>
 
-        <p class="doc-p">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
-        <p class="doc-p">Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
-        <p class="doc-p">Hôm nay, ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:</p>
+        <p class="doc-p" style="text-indent: 40px;">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
+        <p class="doc-p" style="text-indent: 40px;">Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
+        <p class="doc-p" style="text-indent: 40px;">Hôm nay, ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:</p>
         
-        <p class="doc-p"><strong>${escapeHtml(b1).toUpperCase()}</strong><br>
-        Địa chỉ: ${escapeHtml(b2)}<br>
-        Điện thoại: 02438515469<br>
-        Đại diện là Ông/ Bà: <strong>${escapeHtml(b3)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>${escapeHtml(b4)}</strong></p>
+        <p class="doc-indent-p"><strong>${escapeHtml(b1).toUpperCase()}</strong></p>
+        <p class="doc-indent-p">Địa chỉ: ${escapeHtml(b2)}</p>
+        <p class="doc-indent-p">Điện thoại: 02438515469</p>
+        <p class="doc-indent-p">Đại diện là Ông/ Bà: ${escapeHtml(b3)} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: ${escapeHtml(b4)}</p>
 
-        <p class="doc-p"><strong>Nhà thầu:</strong><br>
-        Tên nhà thầu: <strong>CÔNG TY CỔ PHẦN IN HÀ NỘI</strong><br>
-        Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội<br>
-        Điện thoại: 024. 39437063<br>
-        Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng<br>
-        Mã số thuế: 0101181842<br>
-        Đại diện là Bà: <strong>Nguyễn Thị Oanh</strong><br>
-        Chức vụ: <strong>Tổng giám đốc</strong></p>
+        <p class="doc-indent-p" style="margin-top: 10px;"><strong>Nhà thầu:</strong></p>
+        <p class="doc-indent-p">Tên nhà thầu: <strong>CÔNG TY CỔ PHẦN IN HÀ NỘI</strong></p>
+        <p class="doc-indent-p">Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội</p>
+        <p class="doc-indent-p">Điện thoại: 024. 39437063</p>
+        <p class="doc-indent-p">Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng</p>
+        <p class="doc-indent-p">Mã số thuế: 0101181842</p>
+        <p class="doc-indent-p">Đại diện là Bà: Nguyễn Thị Oanh</p>
+        <p class="doc-indent-p">Chức vụ: Tổng giám đốc</p>
 
-        <p class="doc-p">Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
+        <p class="doc-p" style="text-indent: 40px; margin-top: 15px;">Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
 
-        <p class="doc-p"><strong>1. Nội dung nghiệm thu:</strong><br>
-        Trong tháng ${escapeHtml(monthOnly)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
+        <p class="doc-p" style="text-indent: 40px;"><strong>1. Nội dung nghiệm thu:</strong></p>
+        <p class="doc-p" style="text-indent: 40px;">Trong tháng &nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(monthOnly)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
 
         <table class="doc-table">
             <thead>
@@ -506,9 +498,9 @@ function openDocModal() {
             </tbody>
         </table>
 
-        <p class="doc-p">Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
-        <p class="doc-p"><strong>2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</strong></p>
-        <p class="doc-p">Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
+        <p class="doc-p" style="text-indent: 40px;">Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
+        <p class="doc-p" style="text-indent: 40px;"><strong>2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</strong></p>
+        <p class="doc-p" style="text-indent: 40px;">Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
 
         <table class="doc-signatures-table">
             <tr>
@@ -534,7 +526,7 @@ function closeDocModal() {
     document.getElementById('docModal').style.display = 'none';
 }
 
-/* XUẤT FILE WORD (.DOCX) ĐÚNG CỠ CHỮ, CĂN LỀ CHUẨN NGHỊ ĐỊNH 30/2020 */
+/* XUẤT FILE WORD (.DOCX) ĐÚNG 100% CẤU TRÚC TRONG ẢNH MẪU */
 async function downloadWordDoc() {
     if (currentFilteredData.length === 0) return;
     const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } = docx;
@@ -570,31 +562,13 @@ async function downloadWordDoc() {
         sections: [{
             properties: {
                 page: {
-                    margin: { 
-                        top: 1134,    // 2 cm
-                        bottom: 1134, // 2 cm
-                        left: 1701,   // 3 cm
-                        right: 850    // 1.5 cm
-                    }
+                    margin: { top: 1134, bottom: 1134, left: 1701, right: 850 }
                 }
             },
             children: [
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
-                    children: [
-                        new TextRun({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24 })
-                    ]
-                }),
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 200 },
-                    children: [
-                        new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, underline: {}, size: 26 })
-                    ]
-                }),
-
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
                     children: [
                         new TextRun({ text: "BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG", bold: true, size: 28 })
                     ]
@@ -603,57 +577,126 @@ async function downloadWordDoc() {
                     alignment: AlignmentType.CENTER,
                     spacing: { after: 200 },
                     children: [
-                        new TextRun({ text: `(Tháng     ${monthOnly}/2026)`, italics: true, size: 26 })
+                        new TextRun({ text: `(Tháng     /2026)`, bold: true, size: 26 })
                     ]
                 }),
 
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 120, line: 276 },
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
                     children: [
                         new TextRun("Căn cứ Hợp đồng kinh tế số     /2026/HAN-CH ngày     tháng     năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;")
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 120, line: 276 },
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
                     children: [
                         new TextRun(`Căn cứ thực tế bàn giao với ${b1} trong tháng.`)
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 120, line: 276 },
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
                     children: [
                         new TextRun(`Hôm nay, ngày     tháng     năm 2026, tại ${b1}, địa chỉ: ${b2}, chúng tôi gồm có:`)
                     ]
                 }),
 
                 new Paragraph({
-                    spacing: { after: 120, line: 276 },
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
                     children: [
-                        new TextRun({ text: `${b1.toUpperCase()}\n`, bold: true }),
-                        new TextRun(`Địa chỉ: ${b2}\nĐiện thoại: 02438515469\nĐại diện là Ông/ Bà: `),
-                        new TextRun({ text: `${b3}`, bold: true }),
-                        new TextRun(`               Chức vụ: `),
-                        new TextRun({ text: `${b4}`, bold: true })
+                        new TextRun({ text: `${b1.toUpperCase()}`, bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun(`Địa chỉ: ${b2}`)
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Điện thoại: 02438515469")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 120, line: 240 },
+                    children: [
+                        new TextRun(`Đại diện là Ông/ Bà: ${b3}            Chức vụ: ${b4}`)
                     ]
                 }),
 
                 new Paragraph({
-                    spacing: { after: 120, line: 276 },
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
                     children: [
-                        new TextRun({ text: "Nhà thầu:\n", bold: true }),
-                        new TextRun("Tên nhà thầu: "), new TextRun({ text: "CÔNG TY CỔ PHẦN IN HÀ NỘI\n", bold: true }),
-                        new TextRun("Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội\nĐiện thoại: 024. 39437063\nTài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng\nMã số thuế: 0101181842\nĐại diện là Bà: "),
-                        new TextRun({ text: "Nguyễn Thị Oanh\n", bold: true }),
-                        new TextRun("Chức vụ: "), new TextRun({ text: "Tổng giám đốc", bold: true })
+                        new TextRun({ text: "Nhà thầu:", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Tên nhà thầu: "),
+                        new TextRun({ text: "CÔNG TY CỔ PHẦN IN HÀ NỘI", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Điện thoại: 024. 39437063")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Mã số thuế: 0101181842")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 60, line: 240 },
+                    children: [
+                        new TextRun("Đại diện là Bà: Nguyễn Thị Oanh")
+                    ]
+                }),
+                new Paragraph({
+                    indent: { left: 567 },
+                    spacing: { after: 120, line: 240 },
+                    children: [
+                        new TextRun("Chức vụ: Tổng giám đốc")
                     ]
                 }),
 
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 120, line: 276 },
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
                     children: [
                         new TextRun(`Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${b1} như sau:`)
                     ]
@@ -661,10 +704,18 @@ async function downloadWordDoc() {
 
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 60, line: 276 },
+                    children: [
+                        new TextRun({ text: "1. Nội dung nghiệm thu:", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
                     spacing: { after: 120, line: 276 },
                     children: [
-                        new TextRun({ text: "1. Nội dung nghiệm thu:\n", bold: true }),
-                        new TextRun(`Trong tháng       ${monthOnly}/2026, nhà thầu đã bàn giao cho ${b1} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:`)
+                        new TextRun(`Trong tháng     ${monthOnly}/2026, nhà thầu đã bàn giao cho ${b1} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:`)
                     ]
                 }),
 
@@ -741,24 +792,34 @@ async function downloadWordDoc() {
                 }),
 
                 new Paragraph({
-                    spacing: { before: 120, after: 120 },
+                    indent: { firstLine: 567 },
+                    spacing: { before: 100, after: 100 },
                     children: [
-                        new TextRun({ text: "Bằng chữ số tiền thanh toán tháng này: ", bold: false }),
+                        new TextRun({ text: "Bằng chữ số tiền thanh toán tháng này: " }),
                         new TextRun({ text: `${totalText}`, bold: true })
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 120, line: 276 },
+                    indent: { firstLine: 567 },
+                    spacing: { after: 100, line: 276 },
                     children: [
                         new TextRun("Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.")
                     ]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.JUSTIFY,
-                    spacing: { after: 120, line: 276 },
+                    indent: { firstLine: 567 },
+                    spacing: { after: 60, line: 276 },
                     children: [
-                        new TextRun({ text: "2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.\n", bold: true }),
+                        new TextRun({ text: "2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    indent: { firstLine: 567 },
+                    spacing: { after: 200, line: 276 },
+                    children: [
                         new TextRun("Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.")
                     ]
                 }),
