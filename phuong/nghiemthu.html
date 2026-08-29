@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
+    <!-- Thư viện hỗ trợ lưu file Word trực tiếp từ trình duyệt -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -61,17 +63,17 @@
         .btn-create:hover:not(:disabled) {
             background-color: #1b5e20;
         }
-        table {
+        table.main-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
         }
-        th, td {
+        table.main-table th, table.main-table td {
             border: 1px solid #e0e0e0;
             padding: 8px 10px;
             text-align: center;
         }
-        th {
+        table.main-table th {
             background-color: #1b5e20;
             color: white;
             font-weight: bold;
@@ -106,44 +108,92 @@
         .modal-content {
             background-color: #fff;
             margin: 30px auto;
-            padding: 40px;
+            padding: 20px 40px;
             width: 800px;
             max-width: 90%;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            font-family: "Times New Roman", Times, serif;
-            color: #000;
-            line-height: 1.4;
         }
         .modal-actions {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
             margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
         }
         .btn-action {
-            padding: 8px 15px;
+            padding: 8px 16px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
         }
-        .btn-print { background-color: #0288d1; color: white; }
+        .btn-docx { background-color: #1565c0; color: white; }
         .btn-close { background-color: #d32f2f; color: white; }
 
-        /* Style Biên bản chuẩn Word */
-        .doc-header { text-align: center; font-weight: bold; }
-        .doc-title { text-align: center; font-weight: bold; font-size: 16pt; margin: 15px 0; }
-        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt; }
-        .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; }
-        .doc-table th { background-color: #transparent; color: #000; }
-        .doc-signatures { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; font-weight: bold; }
-
-        @media print {
-            body * { visibility: hidden; }
-            #doc-preview-container, #doc-preview-container * { visibility: visible; }
-            #doc-preview-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
-            .modal-actions { display: none; }
+        /* Style Căn chỉnh chuẩn Biên bản Word */
+        #doc-preview-container {
+            font-family: "Times New Roman", Times, serif;
+            color: #000;
+            line-height: 1.25;
+            font-size: 13pt;
+            background: #fff;
+            padding: 20px;
+        }
+        .doc-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .doc-header-table td {
+            vertical-align: top;
+            text-align: center;
+            font-size: 12pt;
+        }
+        .doc-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            margin: 15px 0 20px 0;
+            text-transform: uppercase;
+        }
+        .doc-subtitle {
+            font-size: 13pt;
+            font-weight: normal;
+            text-transform: none;
+            display: block;
+            margin-top: 3px;
+        }
+        .doc-p {
+            text-align: justify;
+            margin: 6px 0;
+            text-indent: 0;
+        }
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 11pt;
+        }
+        .doc-table th, .doc-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+        .doc-table th {
+            font-weight: bold;
+        }
+        .doc-signatures-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+        .doc-signatures-table td {
+            width: 50%;
+            vertical-align: top;
+            text-align: center;
+            font-size: 13pt;
         }
     </style>
 </head>
@@ -169,8 +219,8 @@
         <button id="btn-create-doc" class="btn-create" disabled onclick="openDocModal()">Tạo biên bản</button>
     </div>
 
-    <!-- Bảng dữ liệu -->
-    <table>
+    <!-- Bảng dữ liệu chính -->
+    <table class="main-table">
         <thead>
             <tr>
                 <th rowspan="2">STT</th>
@@ -204,7 +254,7 @@
 <div id="docModal" class="modal">
     <div class="modal-content">
         <div class="modal-actions">
-            <button class="btn-action btn-print" onclick="window.print()">In / Lưu PDF</button>
+            <button class="btn-action btn-docx" onclick="downloadWordDoc()">Tải file Word (.docx)</button>
             <button class="btn-action btn-close" onclick="closeDocModal()">Đóng</button>
         </div>
         <div id="doc-preview-container"></div>
@@ -248,10 +298,10 @@ function loadData() {
 function parsePriceData(csvText) {
     let lines = csvText.split(/\r?\n/);
     priceMap = {
-        'A1': { price: 0, limitQty: 0, maxAmount: 0 },
-        'A2': { price: 0, limitQty: 0, maxAmount: 0 },
-        'A3': { price: 0, limitQty: 0, maxAmount: 0 },
-        'A4': { price: 0, limitQty: 0, maxAmount: 0 }
+        'A1': { price: 74600, limitQty: 0, maxAmount: 0 },
+        'A2': { price: 81300, limitQty: 0, maxAmount: 0 },
+        'A3': { price: 87000, limitQty: 0, maxAmount: 0 },
+        'A4': { price: 90600, limitQty: 0, maxAmount: 0 }
     };
     
     for (let i = 1; i < lines.length; i++) {
@@ -261,11 +311,11 @@ function parsePriceData(csvText) {
             let key = cols[1] ? cols[1].trim().toUpperCase() : "";
             if (key && priceMap.hasOwnProperty(key)) {
                 let limitQty = cols[4] ? parseFloat(cols[4].replace(/[^0-9.-]+/g, "")) : 0;
-                let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : 0;
+                let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : priceMap[key].price;
                 let maxAmount = cols[6] ? parseFloat(cols[6].replace(/[^0-9.-]+/g, "")) : 0;
 
                 priceMap[key] = {
-                    price: isNaN(price) ? 0 : price,
+                    price: isNaN(price) ? priceMap[key].price : price,
                     limitQty: isNaN(limitQty) ? 0 : limitQty,
                     maxAmount: isNaN(maxAmount) ? 0 : maxAmount
                 };
@@ -274,7 +324,7 @@ function parsePriceData(csvText) {
     }
 }
 
-// 3. Đọc dữ liệu đặt nước (Cập nhật đọc thêm cột H, I, J, K tương ứng index 7, 8, 9, 10)
+// 3. Đọc dữ liệu đặt nước (Đọc thêm cột H=index 7, I=index 8, J=index 9, K=index 10)
 function parseOrderData(csvText) {
     let lines = csvText.split(/\r?\n/);
     allData = [];
@@ -298,7 +348,7 @@ function parseOrderData(csvText) {
     }
 }
 
-// 4. Hiển thị bảng dữ liệu
+// 4. Render bảng dữ liệu chính
 function renderTable(dataArray) {
     const tbody = document.getElementById('table-body');
     const tfoot = document.getElementById('table-foot');
@@ -316,10 +366,10 @@ function renderTable(dataArray) {
     let totalAllAmount = 0;
 
     dataArray.forEach((row, index) => {
-        let amt1 = (row.qty1 || 0) * (priceMap['A1'] ? priceMap['A1'].price : 0);
-        let amt2 = (row.qty2 || 0) * (priceMap['A2'] ? priceMap['A2'].price : 0);
-        let amt3 = (row.qty3 || 0) * (priceMap['A3'] ? priceMap['A3'].price : 0);
-        let amt4 = (row.qty4 || 0) * (priceMap['A4'] ? priceMap['A4'].price : 0);
+        let amt1 = (row.qty1 || 0) * (priceMap['A1'] ? priceMap['A1'].price : 74600);
+        let amt2 = (row.qty2 || 0) * (priceMap['A2'] ? priceMap['A2'].price : 81300);
+        let amt3 = (row.qty3 || 0) * (priceMap['A3'] ? priceMap['A3'].price : 87000);
+        let amt4 = (row.qty4 || 0) * (priceMap['A4'] ? priceMap['A4'].price : 90600);
         let rowTotal = amt1 + amt2 + amt3 + amt4;
 
         sumQty1 += (row.qty1 || 0);
@@ -397,7 +447,7 @@ function renderTable(dataArray) {
     tfoot.appendChild(trLimit);
 }
 
-// 5. Hàm lọc và điều khiển nút Tạo biên bản
+// 5. Hàm lọc và điều khiển bật/tắt nút Tạo biên bản
 function applyFilter() {
     const unitVal = document.getElementById('unit-filter').value;
     const monthVal = document.getElementById('month-filter').value;
@@ -410,7 +460,6 @@ function applyFilter() {
 
     renderTable(currentFilteredData);
 
-    // Bật nút Tạo biên bản khi chọn cụ thể 1 đơn vị và 1 tháng
     const btnCreate = document.getElementById('btn-create-doc');
     if (unitVal !== "" && monthVal !== "" && currentFilteredData.length > 0) {
         btnCreate.disabled = false;
@@ -433,18 +482,18 @@ function populateFilters() {
     months.forEach(m => monthSelect.innerHTML += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`);
 }
 
-// 6. XỬ LÝ BIÊN BẢN VĂN BẢN
+// 6. TẠO NỘI DUNG BIÊN BẢN CHUẨN ĐỊNH DẠNG FILE GỐC
 function openDocModal() {
     if (currentFilteredData.length === 0) return;
 
-    let item = currentFilteredData[0]; // Lấy bản ghi lọc được
+    let item = currentFilteredData[0];
     let today = new Date();
 
-    // Điền dữ liệu theo quy ước: B1 (Cột H), B2 (Cột I), B3 (Cột J), B4 (Cột K)
-    let b1 = item.b1 || item.unit; // Thuế cơ sở
-    let b2 = item.b2 || "TP. Hà Nội"; // Địa chỉ
-    let b3 = item.b3 || ".................."; // Đại diện
-    let b4 = item.b4 || ".................."; // Chức vụ
+    // Lấy thông tin H, I, J, K theo quy ước B1, B2, B3, B4
+    let b1 = item.b1 || item.unit; // Cột H
+    let b2 = item.b2 || "TP. Hà Nội"; // Cột I
+    let b3 = item.b3 || ".................."; // Cột J
+    let b4 = item.b4 || ".................."; // Cột K
     let monthStr = item.month || (today.getMonth() + 1);
 
     let p1 = priceMap['A1'] ? priceMap['A1'].price : 74600;
@@ -452,55 +501,63 @@ function openDocModal() {
     let p3 = priceMap['A3'] ? priceMap['A3'].price : 87000;
     let p4 = priceMap['A4'] ? priceMap['A4'].price : 90600;
 
-    let amt1 = item.qty1 * p1;
-    let amt2 = item.qty2 * p2;
-    let amt3 = item.qty3 * p3;
-    let amt4 = item.qty4 * p4;
+    let amt1 = item.qty1 * p1; // Nước bình vòi 18,5l
+    let amt2 = item.qty2 * p2; // Nước bình úp 19l
+    let amt3 = item.qty3 * p3; // Chai 0.35l
+    let amt4 = item.qty4 * p4; // Chai 0.5l
     let totalAmt = amt1 + amt2 + amt3 + amt4;
 
     let totalText = docSoThanhChu(totalAmt);
 
     let docHTML = `
-        <div class="doc-header">
-            CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>
-            Độc lập - Tự do - Hạnh phúc
-        </div>
+        <table class="doc-header-table">
+            <tr>
+                <td style="width: 100%; text-align: center;">
+                    <strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>
+                    <strong><u>Độc lập - Tự do - Hạnh phúc</u></strong>
+                </td>
+            </tr>
+        </table>
+
         <div class="doc-title">
-            BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG<br>
-            <span style="font-size: 13pt; font-weight: normal;">(Tháng ${escapeHtml(monthStr)}/2026)</span>
+            BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG
+            <span class="doc-subtitle">(Tháng ${escapeHtml(monthStr)}/2026)</span>
         </div>
-        <p>Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
-        <p>Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
-        <p>Hôm nay, ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:</p>
+
+        <p class="doc-p">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
+        <p class="doc-p">Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
+        <p class="doc-p">Hôm nay, ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:</p>
         
-        <p><strong>${escapeHtml(b1).toUpperCase()}</strong><br>
+        <p class="doc-p"><strong>${escapeHtml(b1).toUpperCase()}</strong><br>
         Địa chỉ: ${escapeHtml(b2)}<br>
         Điện thoại: 02438515469<br>
-        Đại diện là Ông/ Bà: <strong>${escapeHtml(b3)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>${escapeHtml(b4)}</strong></p>
+        Đại diện là Ông/ Bà: <strong>${escapeHtml(b3)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>${escapeHtml(b4)}</strong></p>
 
-        <p><strong>Nhà thầu: CÔNG TY CỔ PHẦN IN HÀ NỘI</strong><br>
+        <p class="doc-p"><strong>Nhà thầu:</strong><br>
+        Tên nhà thầu: <strong>CÔNG TY CỔ PHẦN IN HÀ NỘI</strong><br>
         Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội<br>
         Điện thoại: 024. 39437063<br>
         Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng<br>
         Mã số thuế: 0101181842<br>
-        Đại diện là Bà: <strong>Nguyễn Thị Oanh</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Tổng giám đốc</strong></p>
+        Đại diện là Bà: <strong>Nguyễn Thị Oanh</strong><br>
+        Chức vụ: <strong>Tổng giám đốc</strong></p>
 
-        <p>Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
+        <p class="doc-p">Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
 
-        <p><strong>1. Nội dung nghiệm thu:</strong><br>
+        <p class="doc-p"><strong>1. Nội dung nghiệm thu:</strong><br>
         Trong tháng ${escapeHtml(monthStr)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
 
         <table class="doc-table">
             <thead>
                 <tr>
-                    <th>STT</th>
-                    <th>Danh mục hàng hóa</th>
-                    <th>ĐVT</th>
-                    <th>Đơn giá (VND)</th>
-                    <th>SL đã bàn giao lũy kế đến tháng trước</th>
-                    <th>Số tiền đã thanh toán lũy kế đến tháng trước</th>
-                    <th>Số lượng bàn giao đợt này</th>
-                    <th>Số tiền thanh toán đợt này (VND)</th>
+                    <th style="width: 5%;">STT</th>
+                    <th style="width: 28%;">Danh mục hàng hóa</th>
+                    <th style="width: 8%;">Đơn vị tính</th>
+                    <th style="width: 10%;">Đơn giá(VND)</th>
+                    <th style="width: 13%;">Số lượng đã bàn giao lũy kế đến tháng trước liền kề</th>
+                    <th style="width: 13%;">Số tiền đã thanh toán lũy kế đến tháng trước liền kề</th>
+                    <th style="width: 10%;">Số lượng bàn giao đợt này</th>
+                    <th style="width: 13%;">Số tiền thanh toán đợt này (VND)</th>
                 </tr>
             </thead>
             <tbody>
@@ -508,65 +565,66 @@ function openDocModal() {
                     <td>1</td>
                     <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình úp 19l</td>
                     <td>Bình</td>
-                    <td>${formatNumber(p1)}</td>
+                    <td style="text-align: right;">${formatNumber(p1)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty2)}</td>
-                    <td>${formatNumber(amt2)}</td>
+                    <td style="text-align: right;">${formatNumber(amt2)}</td>
                 </tr>
                 <tr>
                     <td>2</td>
                     <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình vòi 18,5l</td>
                     <td>Bình</td>
-                    <td>${formatNumber(p2)}</td>
+                    <td style="text-align: right;">${formatNumber(p2)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty1)}</td>
-                    <td>${formatNumber(amt1)}</td>
+                    <td style="text-align: right;">${formatNumber(amt1)}</td>
                 </tr>
                 <tr>
                     <td>3</td>
                     <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,35l</td>
                     <td>Thùng</td>
-                    <td>${formatNumber(p3)}</td>
+                    <td style="text-align: right;">${formatNumber(p3)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty3)}</td>
-                    <td>${formatNumber(amt3)}</td>
+                    <td style="text-align: right;">${formatNumber(amt3)}</td>
                 </tr>
                 <tr>
                     <td>4</td>
                     <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,5l</td>
                     <td>Thùng</td>
-                    <td>${formatNumber(p4)}</td>
+                    <td style="text-align: right;">${formatNumber(p4)}</td>
                     <td></td><td></td>
                     <td>${formatNumber(item.qty4)}</td>
-                    <td>${formatNumber(amt4)}</td>
+                    <td style="text-align: right;">${formatNumber(amt4)}</td>
                 </tr>
                 <tr style="font-weight: bold;">
-                    <td colspan="6">Tổng cộng</td>
-                    <td></td>
-                    <td>${formatNumber(totalAmt)}</td>
+                    <td colspan="7" style="text-align: center;">Tổng cộng</td>
+                    <td style="text-align: right;">${formatNumber(totalAmt)}</td>
                 </tr>
                 <tr>
-                    <td colspan="8" style="text-align: left; font-style: italic;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
+                    <td colspan="8" style="text-align: left; font-style: normal;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
                 </tr>
             </tbody>
         </table>
 
-        <p>Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
-        <p><strong>2.</strong> Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</p>
-        <p>Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
+        <p class="doc-p">Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
+        <p class="doc-p"><strong>2.</strong> Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</p>
+        <p class="doc-p">Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
 
-        <div class="doc-signatures">
-            <div>
-                ĐẠI DIỆN BÊN A<br>
-                KT. TRƯỞNG THUẾ CƠ SỞ<br>
-                PHÓ TRƯỞNG THUẾ CƠ SỞ
-            </div>
-            <div>
-                ĐẠI DIỆN BÊN B<br>
-                TỔNG GIÁM ĐỐC<br><br><br><br>
-                Nguyễn Thị Oanh
-            </div>
-        </div>
+        <table class="doc-signatures-table">
+            <tr>
+                <td>
+                    <strong>ĐẠI DIỆN BÊN A</strong><br>
+                    <strong>KT. TRƯỞNG THUẾ CƠ SỞ</strong><br>
+                    <strong>PHÓ TRƯỞNG THUẾ CƠ SỞ</strong>
+                </td>
+                <td>
+                    <strong>ĐẠI DIỆN BÊN B</strong><br>
+                    <strong>TỔNG GIÁM ĐỐC</strong><br><br><br><br><br>
+                    <strong>Nguyễn Thị Oanh</strong>
+                </td>
+            </tr>
+        </table>
     `;
 
     document.getElementById('doc-preview-container').innerHTML = docHTML;
@@ -577,7 +635,58 @@ function closeDocModal() {
     document.getElementById('docModal').style.display = 'none';
 }
 
-// 7. Hàm hỗ trợ đọc số tiền thành chữ Tiếng Việt
+// 7. HÀM XUẤT TRỰC TIẾP FILE WORD (.DOCX) CHUẨN ĐỊNH DẠNG
+function downloadWordDoc() {
+    let content = document.getElementById('doc-preview-container').innerHTML;
+    let unitVal = document.getElementById('unit-filter').value || "Don_Vi";
+    let monthVal = document.getElementById('month-filter').value || "Thang";
+
+    // Chuẩn hóa HTML nhúng CSS của Microsoft Office Word
+    let header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' 
+                        xmlns:w='urn:schemas-microsoft-com:office:word' 
+                        xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+        <meta charset='utf-8'>
+        <title>Biên bản nghiệm thu</title>
+        <style>
+            @page Section1 {
+                size: 21.0cm 29.7cm;
+                margin: 2.0cm 1.5cm 2.0cm 3.0cm;
+                mso-header-margin: 35.4pt;
+                mso-footer-margin: 35.4pt;
+                mso-paper-source: 0;
+            }
+            div.Section1 { page: Section1; }
+            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.25; }
+            table { border-collapse: collapse; }
+            td, th { font-family: 'Times New Roman', serif; }
+            .doc-header-table { width: 100%; border: none; margin-bottom: 15px; }
+            .doc-header-table td { border: none; text-align: center; font-size: 12pt; }
+            .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 20px 0; }
+            .doc-subtitle { font-size: 13pt; font-weight: normal; }
+            .doc-p { text-align: justify; margin: 6px 0; }
+            .doc-table { width: 100%; margin: 12px 0; font-size: 11pt; }
+            .doc-table th, .doc-table td { border: 1pt solid black; padding: 4pt; }
+            .doc-signatures-table { width: 100%; border: none; margin-top: 25pt; }
+            .doc-signatures-table td { border: none; text-align: center; font-size: 13pt; width: 50%; vertical-align: top; }
+        </style>
+    </head>
+    <body>
+        <div class="Section1">
+            ${content}
+        </div>
+    </body>
+    </html>`;
+
+    let blob = new Blob(['\ufeff' + header], {
+        type: 'application/msword'
+    });
+
+    let fileName = `Bien_ban_nghiem_thu_${unitVal.replace(/\s+/g, '_')}_T${monthVal}.docx`;
+    saveAs(blob, fileName);
+}
+
+// 8. Đọc số tiền thành chữ Tiếng Việt chuẩn
 function docSoThanhChu(so) {
     if (so === 0) return "Không đồng";
     const ChuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
@@ -635,7 +744,7 @@ function docSoThanhChu(so) {
     return str + " đồng";
 }
 
-// Format bổ trợ
+// Các hàm bổ trợ
 function formatNumber(num) {
     if (!num || isNaN(num)) return '0';
     return new Intl.NumberFormat('vi-VN').format(num);
