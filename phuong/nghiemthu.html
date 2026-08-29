@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
-    <!-- Nhập thư viện đọc file Excel SheetJS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -25,26 +23,6 @@
             text-align: center;
             color: #1b5e20;
             margin-bottom: 20px;
-        }
-        .upload-box {
-            background: #e8f5e9;
-            border: 2px dashed #2e7d32;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .upload-box label {
-            font-weight: bold;
-            color: #1b5e20;
-        }
-        .upload-box input[type="file"] {
-            padding: 5px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
         }
         .filter-box {
             display: flex;
@@ -101,12 +79,6 @@
 <div class="container">
     <h2>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h2>
 
-    <!-- Khối nạp file Excel từ máy tính -->
-    <div class="upload-box">
-        <label for="excel-file">CHỌN FILE DỮ LIỆU EXCEL (Dang_ki_nuoc.xlsx):</label>
-        <input type="file" id="excel-file" accept=".xlsx, .xls" onchange="handleFileSelect(event)">
-    </div>
-
     <!-- Bộ lọc -->
     <div class="filter-box">
         <div class="filter-item">
@@ -147,109 +119,95 @@
         </thead>
         <tbody id="table-body">
             <tr>
-                <td colspan="12" style="color:#666; padding:20px;">Vui lòng chọn file <b>Dang_ki_nuoc.xlsx</b> từ máy tính ở trên để xem dữ liệu.</td>
+                <td colspan="12">Đang tải dữ liệu...</td>
             </tr>
         </tbody>
         <tfoot id="table-foot"></tfoot>
     </table>
 </div>
 
+<!-- ĐOẠN CODE JAVASCRIPT XỬ LÝ DỮ LIỆU -->
 <script>
 let priceMap = {}; 
 let allData = [];
 
-// Xử lý khi người dùng chọn file Excel từ máy tính
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+// Đã cập nhật chính xác SHEET_ID của bạn
+const SHEET_ID = "1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w"; 
+const SHEET_SO_LUONG = "So_luong_dat";
+const SHEET_THONG_TIN = "Thong_tin_chung";
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+// 1. Tải dữ liệu từ Google Sheets
+function loadData() {
+    const urlSoLuong = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_SO_LUONG)}`;
+    const urlThongTin = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_THONG_TIN)}`;
 
-            // 1. Đọc sheet "Thong_tin_chung"
-            const sheetThongTinName = workbook.SheetNames.find(name => name.trim().toLowerCase() === "thong_tin_chung");
-            if (sheetThongTinName) {
-                const sheetThongTin = workbook.Sheets[sheetThongTinName];
-                const jsonThongTin = XLSX.utils.sheet_to_json(sheetThongTin, { header: 1 });
-                parsePriceData(jsonThongTin);
-            } else {
-                alert("Không tìm thấy sheet 'Thong_tin_chung' trong file Excel!");
-            }
-
-            // 2. Đọc sheet "So_luong_dat"
-            const sheetSoLuongName = workbook.SheetNames.find(name => name.trim().toLowerCase() === "so_luong_dat");
-            if (sheetSoLuongName) {
-                const sheetSoLuong = workbook.Sheets[sheetSoLuongName];
-                const jsonSoLuong = XLSX.utils.sheet_to_json(sheetSoLuong, { header: 1 });
-                parseOrderData(jsonSoLuong);
-            } else {
-                alert("Không tìm thấy sheet 'So_luong_dat' trong file Excel!");
-            }
-
-            // Cập nhật các bộ lọc và hiển thị bảng
-            populateFilters();
-            applyFilter();
-
-        } catch (error) {
-            console.error("Lỗi đọc file Excel:", error);
-            alert("Lỗi đọc file Excel! Vui lòng kiểm tra lại cấu trúc file Dang_ki_nuoc.xlsx");
+    Promise.all([
+        fetch(urlThongTin).then(res => {
+            if(!res.ok) throw new Error("Lỗi tải Thong_tin_chung");
+            return res.text();
+        }),
+        fetch(urlSoLuong).then(res => {
+            if(!res.ok) throw new Error("Lỗi tải So_luong_dat");
+            return res.text();
+        })
+    ])
+    .then(([csvThongTin, csvSoLuong]) => {
+        parsePriceData(csvThongTin);
+        parseOrderData(csvSoLuong);
+        
+        populateFilters();
+        applyFilter();
+    })
+    .catch(err => {
+        console.error("Lỗi tải dữ liệu:", err);
+        const tbody = document.getElementById('table-body');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="12" style="color:red; text-align:center; padding:20px;">Lỗi tải dữ liệu. Vui lòng kiểm tra quyền truy cập Sheet.</td></tr>';
         }
-    };
-    reader.readAsArrayBuffer(file);
+    });
 }
 
-// 1. Xử lý dữ liệu bảng Thong_tin_chung
-// Cột 1 (B): Mã loại (A1, A2, A3, A4)
-// Cột 4 (E): Giới hạn số lượng
-// Cột 5 (F): Đơn giá
-// Cột 6 (G): Tiền tối đa
-function parsePriceData(rows) {
+// 2. Đọc bảng Thong_tin_chung (E: Giới hạn số lượng, F: Đơn giá, G: Tiền tối đa)
+function parsePriceData(csvText) {
+    let lines = csvText.split(/\r?\n/);
     priceMap = {
         'A1': { price: 0, limitQty: 0, maxAmount: 0 },
         'A2': { price: 0, limitQty: 0, maxAmount: 0 },
         'A3': { price: 0, limitQty: 0, maxAmount: 0 },
         'A4': { price: 0, limitQty: 0, maxAmount: 0 }
     };
+    
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        let cols = parseCSVLine(lines[i]);
+        if (cols.length >= 2) {
+            let key = cols[1] ? cols[1].trim().toUpperCase() : ""; // Cột B: A1, A2...
+            if (key && priceMap.hasOwnProperty(key)) {
+                let limitQty = cols[4] ? parseFloat(cols[4].replace(/[^0-9.-]+/g, "")) : 0; // Cột E
+                let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : 0;    // Cột F
+                let maxAmount = cols[6] ? parseFloat(cols[6].replace(/[^0-9.-]+/g, "")) : 0;// Cột G
 
-    for (let i = 1; i < rows.length; i++) {
-        let cols = rows[i];
-        if (!cols || cols.length < 2) continue;
-
-        let key = cols[1] ? String(cols[1]).trim().toUpperCase() : "";
-        if (key && priceMap.hasOwnProperty(key)) {
-            let limitQty = cols[4] ? parseFloat(String(cols[4]).replace(/[^0-9.-]+/g, "")) : 0;
-            let price = cols[5] ? parseFloat(String(cols[5]).replace(/[^0-9.-]+/g, "")) : 0;
-            let maxAmount = cols[6] ? parseFloat(String(cols[6]).replace(/[^0-9.-]+/g, "")) : 0;
-
-            priceMap[key] = {
-                price: isNaN(price) ? 0 : price,
-                limitQty: isNaN(limitQty) ? 0 : limitQty,
-                maxAmount: isNaN(maxAmount) ? 0 : maxAmount
-            };
+                priceMap[key] = {
+                    price: isNaN(price) ? 0 : price,
+                    limitQty: isNaN(limitQty) ? 0 : limitQty,
+                    maxAmount: isNaN(maxAmount) ? 0 : maxAmount
+                };
+            }
         }
     }
 }
 
-// 2. Xử lý dữ liệu đặt nước từ sheet So_luong_dat
-// Cột 1 (B): Đơn vị
-// Cột 2 (C): Tháng
-// Cột 3->6 (D->G): Số lượng loại 1, 2, 3, 4
-function parseOrderData(rows) {
+// 3. Đọc dữ liệu đặt nước
+function parseOrderData(csvText) {
+    let lines = csvText.split(/\r?\n/);
     allData = [];
-    for (let i = 1; i < rows.length; i++) {
-        let cols = rows[i];
-        if (!cols || cols.length < 3) continue;
-
-        let unit = cols[1] ? String(cols[1]).trim() : "";
-        let month = cols[2] ? String(cols[2]).trim() : "";
-
-        if (unit || month) {
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        let cols = parseCSVLine(lines[i]);
+        if (cols.length >= 7) {
             allData.push({
-                unit: unit,
-                month: month,
+                unit: cols[1] ? cols[1].trim() : "",
+                month: cols[2] ? cols[2].trim() : "",
                 qty1: parseFloat(cols[3]) || 0,
                 qty2: parseFloat(cols[4]) || 0,
                 qty3: parseFloat(cols[5]) || 0,
@@ -259,7 +217,7 @@ function parseOrderData(rows) {
     }
 }
 
-// 3. Hiển thị bảng dữ liệu và 2 hàng tổng kết ở tfoot
+// 4. Hiển thị bảng dữ liệu và 2 hàng tổng kết ở cuối
 function renderTable(dataArray) {
     const tbody = document.getElementById('table-body');
     const tfoot = document.getElementById('table-foot');
@@ -312,7 +270,7 @@ function renderTable(dataArray) {
         tbody.appendChild(tr);
     });
 
-    // Lấy Giới hạn số lượng (Cột E) & Tiền tối đa (Cột G)
+    // Lấy thông tin Giới hạn số lượng (Cột E) & Tiền tối đa (Cột G)
     let limitA1 = priceMap['A1'] ? priceMap['A1'].limitQty : 0;
     let limitA2 = priceMap['A2'] ? priceMap['A2'].limitQty : 0;
     let limitA3 = priceMap['A3'] ? priceMap['A3'].limitQty : 0;
@@ -323,9 +281,10 @@ function renderTable(dataArray) {
     let maxAmtA3 = priceMap['A3'] ? priceMap['A3'].maxAmount : 0;
     let maxAmtA4 = priceMap['A4'] ? priceMap['A4'].maxAmount : 0;
 
+    // TỔNG TIỀN TỐI ĐA (Tổng 4 giá trị cột G)
     let grandTotalMaxAmount = maxAmtA1 + maxAmtA2 + maxAmtA3 + maxAmtA4;
 
-    // Hàng 1: Tổng cộng đăng ký
+    // Hàng 1: Tổng đăng ký
     let trTotal = document.createElement('tr');
     trTotal.className = 'row-total';
     trTotal.innerHTML = `
@@ -361,7 +320,7 @@ function renderTable(dataArray) {
     tfoot.appendChild(trLimit);
 }
 
-// 4. Lọc dữ liệu theo Đơn vị và Tháng
+// 5. Hàm lọc
 function applyFilter() {
     const unitVal = document.getElementById('unit-filter').value;
     const monthVal = document.getElementById('month-filter').value;
@@ -389,7 +348,7 @@ function populateFilters() {
     months.forEach(m => monthSelect.innerHTML += `<option value="${m}">${m}</option>`);
 }
 
-// Các hàm bổ trợ
+// Hàm bổ trợ định dạng
 function formatNumber(num) {
     if (!num || isNaN(num)) return '0';
     return new Intl.NumberFormat('vi-VN').format(num);
@@ -404,6 +363,28 @@ function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+function parseCSVLine(text) {
+    let result = [];
+    let cell = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        let c = text[i];
+        if (c === '"') {
+            inQuotes = !inQuotes;
+        } else if (c === ',' && !inQuotes) {
+            result.push(cell.trim());
+            cell = '';
+        } else {
+            cell += c;
+        }
+    }
+    result.push(cell.trim());
+    return result;
+}
+
+// Gọi thực thi khi trang web load hoàn tất
+document.addEventListener('DOMContentLoaded', loadData);
 </script>
 
 </body>
