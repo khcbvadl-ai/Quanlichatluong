@@ -31,6 +31,8 @@
             background: #f1f8e9;
             padding: 15px;
             border-radius: 6px;
+            align-items: center;
+            flex-wrap: wrap;
         }
         .filter-item {
             display: flex;
@@ -41,6 +43,23 @@
             padding: 6px 12px;
             border: 1px solid #ccc;
             border-radius: 4px;
+        }
+        .btn-create {
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .btn-create:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .btn-create:hover:not(:disabled) {
+            background-color: #1b5e20;
         }
         table {
             width: 100%;
@@ -63,7 +82,6 @@
         tbody tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        /* Style cho 2 hàng tổng */
         tfoot tr.row-total {
             background-color: #e8f5e9;
             font-weight: bold;
@@ -71,6 +89,61 @@
         tfoot tr.row-limit {
             background-color: #fff3e0;
             font-weight: bold;
+        }
+
+        /* Styling cho Modal Xem Trước Biên Bản */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 30px auto;
+            padding: 40px;
+            width: 800px;
+            max-width: 90%;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-family: "Times New Roman", Times, serif;
+            color: #000;
+            line-height: 1.4;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn-action {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-print { background-color: #0288d1; color: white; }
+        .btn-close { background-color: #d32f2f; color: white; }
+
+        /* Style Biên bản chuẩn Word */
+        .doc-header { text-align: center; font-weight: bold; }
+        .doc-title { text-align: center; font-weight: bold; font-size: 16pt; margin: 15px 0; }
+        .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; }
+        .doc-table th { background-color: #transparent; color: #000; }
+        .doc-signatures { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; font-weight: bold; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #doc-preview-container, #doc-preview-container * { visibility: visible; }
+            #doc-preview-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+            .modal-actions { display: none; }
         }
     </style>
 </head>
@@ -93,6 +166,7 @@
                 <option value="">-- Tất cả tháng --</option>
             </select>
         </div>
+        <button id="btn-create-doc" class="btn-create" disabled onclick="openDocModal()">Tạo biên bản</button>
     </div>
 
     <!-- Bảng dữ liệu -->
@@ -126,12 +200,22 @@
     </table>
 </div>
 
-<!-- ĐOẠN CODE JAVASCRIPT XỬ LÝ DỮ LIỆU -->
+<!-- Modal xem trước Biên bản -->
+<div id="docModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-actions">
+            <button class="btn-action btn-print" onclick="window.print()">In / Lưu PDF</button>
+            <button class="btn-action btn-close" onclick="closeDocModal()">Đóng</button>
+        </div>
+        <div id="doc-preview-container"></div>
+    </div>
+</div>
+
 <script>
 let priceMap = {}; 
 let allData = [];
+let currentFilteredData = [];
 
-// Đã cập nhật chính xác SHEET_ID của bạn
 const SHEET_ID = "1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w"; 
 const SHEET_SO_LUONG = "So_luong_dat";
 const SHEET_THONG_TIN = "Thong_tin_chung";
@@ -142,19 +226,12 @@ function loadData() {
     const urlThongTin = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_THONG_TIN)}`;
 
     Promise.all([
-        fetch(urlThongTin).then(res => {
-            if(!res.ok) throw new Error("Lỗi tải Thong_tin_chung");
-            return res.text();
-        }),
-        fetch(urlSoLuong).then(res => {
-            if(!res.ok) throw new Error("Lỗi tải So_luong_dat");
-            return res.text();
-        })
+        fetch(urlThongTin).then(res => { if(!res.ok) throw new Error("Lỗi tải Thong_tin_chung"); return res.text(); }),
+        fetch(urlSoLuong).then(res => { if(!res.ok) throw new Error("Lỗi tải So_luong_dat"); return res.text(); })
     ])
     .then(([csvThongTin, csvSoLuong]) => {
         parsePriceData(csvThongTin);
         parseOrderData(csvSoLuong);
-        
         populateFilters();
         applyFilter();
     })
@@ -167,7 +244,7 @@ function loadData() {
     });
 }
 
-// 2. Đọc bảng Thong_tin_chung (E: Giới hạn số lượng, F: Đơn giá, G: Tiền tối đa)
+// 2. Đọc bảng Thong_tin_chung
 function parsePriceData(csvText) {
     let lines = csvText.split(/\r?\n/);
     priceMap = {
@@ -181,11 +258,11 @@ function parsePriceData(csvText) {
         if (!lines[i].trim()) continue;
         let cols = parseCSVLine(lines[i]);
         if (cols.length >= 2) {
-            let key = cols[1] ? cols[1].trim().toUpperCase() : ""; // Cột B: A1, A2...
+            let key = cols[1] ? cols[1].trim().toUpperCase() : "";
             if (key && priceMap.hasOwnProperty(key)) {
-                let limitQty = cols[4] ? parseFloat(cols[4].replace(/[^0-9.-]+/g, "")) : 0; // Cột E
-                let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : 0;    // Cột F
-                let maxAmount = cols[6] ? parseFloat(cols[6].replace(/[^0-9.-]+/g, "")) : 0;// Cột G
+                let limitQty = cols[4] ? parseFloat(cols[4].replace(/[^0-9.-]+/g, "")) : 0;
+                let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : 0;
+                let maxAmount = cols[6] ? parseFloat(cols[6].replace(/[^0-9.-]+/g, "")) : 0;
 
                 priceMap[key] = {
                     price: isNaN(price) ? 0 : price,
@@ -197,7 +274,7 @@ function parsePriceData(csvText) {
     }
 }
 
-// 3. Đọc dữ liệu đặt nước
+// 3. Đọc dữ liệu đặt nước (Cập nhật đọc thêm cột H, I, J, K tương ứng index 7, 8, 9, 10)
 function parseOrderData(csvText) {
     let lines = csvText.split(/\r?\n/);
     allData = [];
@@ -211,13 +288,17 @@ function parseOrderData(csvText) {
                 qty1: parseFloat(cols[3]) || 0,
                 qty2: parseFloat(cols[4]) || 0,
                 qty3: parseFloat(cols[5]) || 0,
-                qty4: parseFloat(cols[6]) || 0
+                qty4: parseFloat(cols[6]) || 0,
+                b1: cols[7] ? cols[7].trim() : "", // Cột H
+                b2: cols[8] ? cols[8].trim() : "", // Cột I
+                b3: cols[9] ? cols[9].trim() : "", // Cột J
+                b4: cols[10] ? cols[10].trim() : "" // Cột K
             });
         }
     }
 }
 
-// 4. Hiển thị bảng dữ liệu và 2 hàng tổng kết ở cuối
+// 4. Hiển thị bảng dữ liệu
 function renderTable(dataArray) {
     const tbody = document.getElementById('table-body');
     const tfoot = document.getElementById('table-foot');
@@ -270,7 +351,6 @@ function renderTable(dataArray) {
         tbody.appendChild(tr);
     });
 
-    // Lấy thông tin Giới hạn số lượng (Cột E) & Tiền tối đa (Cột G)
     let limitA1 = priceMap['A1'] ? priceMap['A1'].limitQty : 0;
     let limitA2 = priceMap['A2'] ? priceMap['A2'].limitQty : 0;
     let limitA3 = priceMap['A3'] ? priceMap['A3'].limitQty : 0;
@@ -281,10 +361,8 @@ function renderTable(dataArray) {
     let maxAmtA3 = priceMap['A3'] ? priceMap['A3'].maxAmount : 0;
     let maxAmtA4 = priceMap['A4'] ? priceMap['A4'].maxAmount : 0;
 
-    // TỔNG TIỀN TỐI ĐA (Tổng 4 giá trị cột G)
     let grandTotalMaxAmount = maxAmtA1 + maxAmtA2 + maxAmtA3 + maxAmtA4;
 
-    // Hàng 1: Tổng đăng ký
     let trTotal = document.createElement('tr');
     trTotal.className = 'row-total';
     trTotal.innerHTML = `
@@ -300,7 +378,6 @@ function renderTable(dataArray) {
         <td style="color: #2e7d32;">${formatCurrency(totalAllAmount)}</td>
     `;
 
-    // Hàng 2: Số lượng giới hạn / Tiền tối đa
     let trLimit = document.createElement('tr');
     trLimit.className = 'row-limit';
     trLimit.innerHTML = `
@@ -320,18 +397,26 @@ function renderTable(dataArray) {
     tfoot.appendChild(trLimit);
 }
 
-// 5. Hàm lọc
+// 5. Hàm lọc và điều khiển nút Tạo biên bản
 function applyFilter() {
     const unitVal = document.getElementById('unit-filter').value;
     const monthVal = document.getElementById('month-filter').value;
 
-    let filtered = allData.filter(item => {
+    currentFilteredData = allData.filter(item => {
         let matchUnit = !unitVal || item.unit === unitVal;
         let matchMonth = !monthVal || item.month === monthVal;
         return matchUnit && matchMonth;
     });
 
-    renderTable(filtered);
+    renderTable(currentFilteredData);
+
+    // Bật nút Tạo biên bản khi chọn cụ thể 1 đơn vị và 1 tháng
+    const btnCreate = document.getElementById('btn-create-doc');
+    if (unitVal !== "" && monthVal !== "" && currentFilteredData.length > 0) {
+        btnCreate.disabled = false;
+    } else {
+        btnCreate.disabled = true;
+    }
 }
 
 function populateFilters() {
@@ -342,13 +427,215 @@ function populateFilters() {
     let months = [...new Set(allData.map(item => item.month))].filter(Boolean);
 
     unitSelect.innerHTML = '<option value="">-- Tất cả đơn vị --</option>';
-    units.forEach(u => unitSelect.innerHTML += `<option value="${u}">${u}</option>`);
+    units.forEach(u => unitSelect.innerHTML += `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`);
 
     monthSelect.innerHTML = '<option value="">-- Tất cả tháng --</option>';
-    months.forEach(m => monthSelect.innerHTML += `<option value="${m}">${m}</option>`);
+    months.forEach(m => monthSelect.innerHTML += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`);
 }
 
-// Hàm bổ trợ định dạng
+// 6. XỬ LÝ BIÊN BẢN VĂN BẢN
+function openDocModal() {
+    if (currentFilteredData.length === 0) return;
+
+    let item = currentFilteredData[0]; // Lấy bản ghi lọc được
+    let today = new Date();
+
+    // Điền dữ liệu theo quy ước: B1 (Cột H), B2 (Cột I), B3 (Cột J), B4 (Cột K)
+    let b1 = item.b1 || item.unit; // Thuế cơ sở
+    let b2 = item.b2 || "TP. Hà Nội"; // Địa chỉ
+    let b3 = item.b3 || ".................."; // Đại diện
+    let b4 = item.b4 || ".................."; // Chức vụ
+    let monthStr = item.month || (today.getMonth() + 1);
+
+    let p1 = priceMap['A1'] ? priceMap['A1'].price : 74600;
+    let p2 = priceMap['A2'] ? priceMap['A2'].price : 81300;
+    let p3 = priceMap['A3'] ? priceMap['A3'].price : 87000;
+    let p4 = priceMap['A4'] ? priceMap['A4'].price : 90600;
+
+    let amt1 = item.qty1 * p1;
+    let amt2 = item.qty2 * p2;
+    let amt3 = item.qty3 * p3;
+    let amt4 = item.qty4 * p4;
+    let totalAmt = amt1 + amt2 + amt3 + amt4;
+
+    let totalText = docSoThanhChu(totalAmt);
+
+    let docHTML = `
+        <div class="doc-header">
+            CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>
+            Độc lập - Tự do - Hạnh phúc
+        </div>
+        <div class="doc-title">
+            BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG<br>
+            <span style="font-size: 13pt; font-weight: normal;">(Tháng ${escapeHtml(monthStr)}/2026)</span>
+        </div>
+        <p>Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
+        <p>Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
+        <p>Hôm nay, ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:</p>
+        
+        <p><strong>${escapeHtml(b1).toUpperCase()}</strong><br>
+        Địa chỉ: ${escapeHtml(b2)}<br>
+        Điện thoại: 02438515469<br>
+        Đại diện là Ông/ Bà: <strong>${escapeHtml(b3)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>${escapeHtml(b4)}</strong></p>
+
+        <p><strong>Nhà thầu: CÔNG TY CỔ PHẦN IN HÀ NỘI</strong><br>
+        Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội<br>
+        Điện thoại: 024. 39437063<br>
+        Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng<br>
+        Mã số thuế: 0101181842<br>
+        Đại diện là Bà: <strong>Nguyễn Thị Oanh</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Tổng giám đốc</strong></p>
+
+        <p>Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
+
+        <p><strong>1. Nội dung nghiệm thu:</strong><br>
+        Trong tháng ${escapeHtml(monthStr)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
+
+        <table class="doc-table">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Danh mục hàng hóa</th>
+                    <th>ĐVT</th>
+                    <th>Đơn giá (VND)</th>
+                    <th>SL đã bàn giao lũy kế đến tháng trước</th>
+                    <th>Số tiền đã thanh toán lũy kế đến tháng trước</th>
+                    <th>Số lượng bàn giao đợt này</th>
+                    <th>Số tiền thanh toán đợt này (VND)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình úp 19l</td>
+                    <td>Bình</td>
+                    <td>${formatNumber(p1)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty2)}</td>
+                    <td>${formatNumber(amt2)}</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng bình vòi 18,5l</td>
+                    <td>Bình</td>
+                    <td>${formatNumber(p2)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty1)}</td>
+                    <td>${formatNumber(amt1)}</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,35l</td>
+                    <td>Thùng</td>
+                    <td>${formatNumber(p3)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty3)}</td>
+                    <td>${formatNumber(amt3)}</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td style="text-align: left;">Nước khoáng thiên nhiên đóng chai 0,5l</td>
+                    <td>Thùng</td>
+                    <td>${formatNumber(p4)}</td>
+                    <td></td><td></td>
+                    <td>${formatNumber(item.qty4)}</td>
+                    <td>${formatNumber(amt4)}</td>
+                </tr>
+                <tr style="font-weight: bold;">
+                    <td colspan="6">Tổng cộng</td>
+                    <td></td>
+                    <td>${formatNumber(totalAmt)}</td>
+                </tr>
+                <tr>
+                    <td colspan="8" style="text-align: left; font-style: italic;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
+        <p><strong>2.</strong> Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</p>
+        <p>Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
+
+        <div class="doc-signatures">
+            <div>
+                ĐẠI DIỆN BÊN A<br>
+                KT. TRƯỞNG THUẾ CƠ SỞ<br>
+                PHÓ TRƯỞNG THUẾ CƠ SỞ
+            </div>
+            <div>
+                ĐẠI DIỆN BÊN B<br>
+                TỔNG GIÁM ĐỐC<br><br><br><br>
+                Nguyễn Thị Oanh
+            </div>
+        </div>
+    `;
+
+    document.getElementById('doc-preview-container').innerHTML = docHTML;
+    document.getElementById('docModal').style.display = 'block';
+}
+
+function closeDocModal() {
+    document.getElementById('docModal').style.display = 'none';
+}
+
+// 7. Hàm hỗ trợ đọc số tiền thành chữ Tiếng Việt
+function docSoThanhChu(so) {
+    if (so === 0) return "Không đồng";
+    const ChuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+    function docTien3So(baso) {
+        let tram = Math.floor(baso / 100);
+        let chuc = Math.floor((baso % 100) / 10);
+        let donvi = baso % 10;
+        let ketqua = "";
+        if (tram == 0 && chuc == 0 && donvi == 0) return "";
+        if (tram != 0) {
+            ketqua += ChuSo[tram] + " trăm";
+            if ((chuc == 0) && (donvi != 0)) ketqua += " lẻ";
+        }
+        if ((chuc != 0) && (chuc != 1)) {
+            ketqua += " " + ChuSo[chuc] + " mươi";
+            if ((chuc == 0) && (donvi != 0)) ketqua = ketqua + " lẻ";
+        }
+        if (chuc == 1) ketqua += " mười";
+        switch (donvi) {
+            case 1:
+                if ((chuc != 0) && (chuc != 1)) ketqua += " mốt";
+                else ketqua += " " + ChuSo[donvi];
+                break;
+            case 5:
+                if (chuc == 0) ketqua += " " + ChuSo[donvi];
+                else ketqua += " lăm";
+                break;
+            default:
+                if (donvi != 0) ketqua += " " + ChuSo[donvi];
+                break;
+        }
+        return ketqua;
+    }
+
+    let str = "", i = 0;
+    let Tien = [0, 0, 0, 0, 0];
+    Tien[4] = Math.floor(so / 1000000000000);
+    so = so % 1000000000000;
+    Tien[3] = Math.floor(so / 1000000000);
+    so = so % 1000000000;
+    Tien[2] = Math.floor(so / 1000000);
+    Tien[1] = Math.floor((so % 1000000) / 1000);
+    Tien[0] = Math.floor(so % 1000);
+
+    let HauTo = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ"];
+    for (i = 4; i >= 0; i--) {
+        if (Tien[i] > 0) break;
+    }
+    for (let j = i; j >= 0; j--) {
+        let hienthi = docTien3So(Tien[j]);
+        str += hienthi + " " + HauTo[j] + " ";
+    }
+    str = str.trim();
+    if (str.length > 0) str = str.substring(0, 1).toUpperCase() + str.substring(1);
+    return str + " đồng";
+}
+
+// Format bổ trợ
 function formatNumber(num) {
     if (!num || isNaN(num)) return '0';
     return new Intl.NumberFormat('vi-VN').format(num);
@@ -361,7 +648,7 @@ function formatCurrency(amt) {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function parseCSVLine(text) {
@@ -373,17 +660,16 @@ function parseCSVLine(text) {
         if (c === '"') {
             inQuotes = !inQuotes;
         } else if (c === ',' && !inQuotes) {
-            result.push(cell.trim());
+            result.push(cell.trim().replace(/^"|"$/g, ''));
             cell = '';
         } else {
             cell += c;
         }
     }
-    result.push(cell.trim());
+    result.push(cell.trim().replace(/^"|"$/g, ''));
     return result;
 }
 
-// Gọi thực thi khi trang web load hoàn tất
 document.addEventListener('DOMContentLoaded', loadData);
 </script>
 
