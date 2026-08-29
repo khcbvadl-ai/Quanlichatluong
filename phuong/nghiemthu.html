@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
-    <!-- Thư viện hỗ trợ lưu file Word trực tiếp từ trình duyệt -->
+    <!-- Thư viện docx.js chính thức tạo file Word chuẩn 100% -->
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         body {
@@ -21,180 +22,60 @@
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        h2 {
-            text-align: center;
-            color: #1b5e20;
-            margin-bottom: 20px;
-        }
+        h2 { text-align: center; color: #1b5e20; margin-bottom: 20px; }
         .filter-box {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            background: #f1f8e9;
-            padding: 15px;
-            border-radius: 6px;
-            align-items: center;
-            flex-wrap: wrap;
+            display: flex; gap: 15px; margin-bottom: 20px; background: #f1f8e9;
+            padding: 15px; border-radius: 6px; align-items: center; flex-wrap: wrap;
         }
-        .filter-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        select {
-            padding: 6px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+        .filter-item { display: flex; align-items: center; gap: 8px; }
+        select { padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; }
         .btn-create {
-            background-color: #2e7d32;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
+            background-color: #2e7d32; color: white; border: none; padding: 8px 16px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s;
         }
-        .btn-create:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .btn-create:hover:not(:disabled) {
-            background-color: #1b5e20;
-        }
-        table.main-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        table.main-table th, table.main-table td {
-            border: 1px solid #e0e0e0;
-            padding: 8px 10px;
-            text-align: center;
-        }
-        table.main-table th {
-            background-color: #1b5e20;
-            color: white;
-            font-weight: bold;
-        }
-        .sub-header {
-            background-color: #2e7d32;
-        }
-        tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tfoot tr.row-total {
-            background-color: #e8f5e9;
-            font-weight: bold;
-        }
-        tfoot tr.row-limit {
-            background-color: #fff3e0;
-            font-weight: bold;
-        }
+        .btn-create:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .btn-create:hover:not(:disabled) { background-color: #1b5e20; }
+        
+        table.main-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table.main-table th, table.main-table td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: center; }
+        table.main-table th { background-color: #1b5e20; color: white; font-weight: bold; }
+        .sub-header { background-color: #2e7d32; }
+        tbody tr:nth-child(even) { background-color: #f9f9f9; }
+        tfoot tr.row-total { background-color: #e8f5e9; font-weight: bold; }
+        tfoot tr.row-limit { background-color: #fff3e0; font-weight: bold; }
 
-        /* Styling cho Modal Xem Trước Biên Bản */
+        /* Styling Modal */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            overflow-y: auto;
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto;
         }
         .modal-content {
-            background-color: #fff;
-            margin: 30px auto;
-            padding: 20px 40px;
-            width: 800px;
-            max-width: 90%;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            background-color: #fff; margin: 30px auto; padding: 20px 40px;
+            width: 800px; max-width: 90%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;
+            padding-bottom: 10px; border-bottom: 1px solid #eee;
         }
-        .btn-action {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        .btn-action { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-docx { background-color: #1565c0; color: white; }
         .btn-close { background-color: #d32f2f; color: white; }
 
-        /* Style Căn chỉnh chuẩn Biên bản Word */
+        /* Style Preview Biên bản */
         #doc-preview-container {
-            font-family: "Times New Roman", Times, serif;
-            color: #000;
-            line-height: 1.25;
-            font-size: 13pt;
-            background: #fff;
-            padding: 20px;
+            font-family: "Times New Roman", Times, serif; color: #000;
+            line-height: 1.25; font-size: 13pt; background: #fff; padding: 20px;
         }
-        .doc-header-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-        .doc-header-table td {
-            vertical-align: top;
-            text-align: center;
-            font-size: 12pt;
-        }
-        .doc-title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 14pt;
-            margin: 15px 0 20px 0;
-            text-transform: uppercase;
-        }
-        .doc-subtitle {
-            font-size: 13pt;
-            font-weight: normal;
-            text-transform: none;
-            display: block;
-            margin-top: 3px;
-        }
-        .doc-p {
-            text-align: justify;
-            margin: 6px 0;
-            text-indent: 0;
-        }
-        .doc-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 12px 0;
-            font-size: 11pt;
-        }
-        .doc-table th, .doc-table td {
-            border: 1px solid #000;
-            padding: 5px;
-            text-align: center;
-        }
-        .doc-table th {
-            font-weight: bold;
-        }
-        .doc-signatures-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 25px;
-        }
-        .doc-signatures-table td {
-            width: 50%;
-            vertical-align: top;
-            text-align: center;
-            font-size: 13pt;
-        }
+        .doc-header-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .doc-header-table td { vertical-align: top; text-align: center; font-size: 12pt; }
+        .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 20px 0; text-transform: uppercase; }
+        .doc-subtitle { font-size: 13pt; font-weight: normal; text-transform: none; display: block; margin-top: 3px; }
+        .doc-p { text-align: justify; margin: 6px 0; text-indent: 0; }
+        .doc-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11pt; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 5px; text-align: center; }
+        .doc-table th { font-weight: bold; }
+        .doc-signatures-table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        .doc-signatures-table td { width: 50%; vertical-align: top; text-align: center; font-size: 13pt; }
     </style>
 </head>
 <body>
@@ -202,7 +83,6 @@
 <div class="container">
     <h2>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h2>
 
-    <!-- Bộ lọc -->
     <div class="filter-box">
         <div class="filter-item">
             <label for="unit-filter"><strong>ĐƠN VỊ:</strong></label>
@@ -219,7 +99,6 @@
         <button id="btn-create-doc" class="btn-create" disabled onclick="openDocModal()">Tạo biên bản</button>
     </div>
 
-    <!-- Bảng dữ liệu chính -->
     <table class="main-table">
         <thead>
             <tr>
@@ -242,15 +121,12 @@
             </tr>
         </thead>
         <tbody id="table-body">
-            <tr>
-                <td colspan="12">Đang tải dữ liệu...</td>
-            </tr>
+            <tr><td colspan="12">Đang tải dữ liệu...</td></tr>
         </tbody>
         <tfoot id="table-foot"></tfoot>
     </table>
 </div>
 
-<!-- Modal xem trước Biên bản -->
 <div id="docModal" class="modal">
     <div class="modal-content">
         <div class="modal-actions">
@@ -270,14 +146,13 @@ const SHEET_ID = "1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w";
 const SHEET_SO_LUONG = "So_luong_dat";
 const SHEET_THONG_TIN = "Thong_tin_chung";
 
-// 1. Tải dữ liệu từ Google Sheets
 function loadData() {
     const urlSoLuong = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_SO_LUONG)}`;
     const urlThongTin = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_THONG_TIN)}`;
 
     Promise.all([
-        fetch(urlThongTin).then(res => { if(!res.ok) throw new Error("Lỗi tải Thong_tin_chung"); return res.text(); }),
-        fetch(urlSoLuong).then(res => { if(!res.ok) throw new Error("Lỗi tải So_luong_dat"); return res.text(); })
+        fetch(urlThongTin).then(res => res.text()),
+        fetch(urlSoLuong).then(res => res.text())
     ])
     .then(([csvThongTin, csvSoLuong]) => {
         parsePriceData(csvThongTin);
@@ -287,14 +162,9 @@ function loadData() {
     })
     .catch(err => {
         console.error("Lỗi tải dữ liệu:", err);
-        const tbody = document.getElementById('table-body');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="12" style="color:red; text-align:center; padding:20px;">Lỗi tải dữ liệu. Vui lòng kiểm tra quyền truy cập Sheet.</td></tr>';
-        }
     });
 }
 
-// 2. Đọc bảng Thong_tin_chung
 function parsePriceData(csvText) {
     let lines = csvText.split(/\r?\n/);
     priceMap = {
@@ -303,7 +173,6 @@ function parsePriceData(csvText) {
         'A3': { price: 87000, limitQty: 0, maxAmount: 0 },
         'A4': { price: 90600, limitQty: 0, maxAmount: 0 }
     };
-    
     for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         let cols = parseCSVLine(lines[i]);
@@ -313,7 +182,6 @@ function parsePriceData(csvText) {
                 let limitQty = cols[4] ? parseFloat(cols[4].replace(/[^0-9.-]+/g, "")) : 0;
                 let price = cols[5] ? parseFloat(cols[5].replace(/[^0-9.-]+/g, "")) : priceMap[key].price;
                 let maxAmount = cols[6] ? parseFloat(cols[6].replace(/[^0-9.-]+/g, "")) : 0;
-
                 priceMap[key] = {
                     price: isNaN(price) ? priceMap[key].price : price,
                     limitQty: isNaN(limitQty) ? 0 : limitQty,
@@ -324,7 +192,6 @@ function parsePriceData(csvText) {
     }
 }
 
-// 3. Đọc dữ liệu đặt nước (Đọc thêm cột H=index 7, I=index 8, J=index 9, K=index 10)
 function parseOrderData(csvText) {
     let lines = csvText.split(/\r?\n/);
     allData = [];
@@ -348,16 +215,13 @@ function parseOrderData(csvText) {
     }
 }
 
-// 4. Render bảng dữ liệu chính
 function renderTable(dataArray) {
     const tbody = document.getElementById('table-body');
     const tfoot = document.getElementById('table-foot');
-    
-    tbody.innerHTML = '';
-    tfoot.innerHTML = '';
+    tbody.innerHTML = ''; tfoot.innerHTML = '';
 
     if (!dataArray || dataArray.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:15px;">Không tìm thấy dữ liệu phù hợp.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12">Không tìm thấy dữ liệu.</td></tr>';
         return;
     }
 
@@ -366,21 +230,14 @@ function renderTable(dataArray) {
     let totalAllAmount = 0;
 
     dataArray.forEach((row, index) => {
-        let amt1 = (row.qty1 || 0) * (priceMap['A1'] ? priceMap['A1'].price : 74600);
-        let amt2 = (row.qty2 || 0) * (priceMap['A2'] ? priceMap['A2'].price : 81300);
-        let amt3 = (row.qty3 || 0) * (priceMap['A3'] ? priceMap['A3'].price : 87000);
-        let amt4 = (row.qty4 || 0) * (priceMap['A4'] ? priceMap['A4'].price : 90600);
+        let amt1 = row.qty1 * priceMap['A1'].price;
+        let amt2 = row.qty2 * priceMap['A2'].price;
+        let amt3 = row.qty3 * priceMap['A3'].price;
+        let amt4 = row.qty4 * priceMap['A4'].price;
         let rowTotal = amt1 + amt2 + amt3 + amt4;
 
-        sumQty1 += (row.qty1 || 0);
-        sumQty2 += (row.qty2 || 0);
-        sumQty3 += (row.qty3 || 0);
-        sumQty4 += (row.qty4 || 0);
-
-        sumAmt1 += amt1;
-        sumAmt2 += amt2;
-        sumAmt3 += amt3;
-        sumAmt4 += amt4;
+        sumQty1 += row.qty1; sumQty2 += row.qty2; sumQty3 += row.qty3; sumQty4 += row.qty4;
+        sumAmt1 += amt1; sumAmt2 += amt2; sumAmt3 += amt3; sumAmt4 += amt4;
         totalAllAmount += rowTotal;
 
         let tr = document.createElement('tr');
@@ -401,53 +258,19 @@ function renderTable(dataArray) {
         tbody.appendChild(tr);
     });
 
-    let limitA1 = priceMap['A1'] ? priceMap['A1'].limitQty : 0;
-    let limitA2 = priceMap['A2'] ? priceMap['A2'].limitQty : 0;
-    let limitA3 = priceMap['A3'] ? priceMap['A3'].limitQty : 0;
-    let limitA4 = priceMap['A4'] ? priceMap['A4'].limitQty : 0;
-
-    let maxAmtA1 = priceMap['A1'] ? priceMap['A1'].maxAmount : 0;
-    let maxAmtA2 = priceMap['A2'] ? priceMap['A2'].maxAmount : 0;
-    let maxAmtA3 = priceMap['A3'] ? priceMap['A3'].maxAmount : 0;
-    let maxAmtA4 = priceMap['A4'] ? priceMap['A4'].maxAmount : 0;
-
-    let grandTotalMaxAmount = maxAmtA1 + maxAmtA2 + maxAmtA3 + maxAmtA4;
-
     let trTotal = document.createElement('tr');
     trTotal.className = 'row-total';
     trTotal.innerHTML = `
-        <td colspan="3" style="text-align: center;">TỔNG CỘNG ĐĂNG KÝ</td>
-        <td>${formatNumber(sumQty1)}</td>
-        <td>${formatNumber(sumQty2)}</td>
-        <td>${formatNumber(sumQty3)}</td>
-        <td>${formatNumber(sumQty4)}</td>
-        <td>${formatCurrency(sumAmt1)}</td>
-        <td>${formatCurrency(sumAmt2)}</td>
-        <td>${formatCurrency(sumAmt3)}</td>
-        <td>${formatCurrency(sumAmt4)}</td>
+        <td colspan="3">TỔNG CỘNG ĐĂNG KÝ</td>
+        <td>${formatNumber(sumQty1)}</td><td>${formatNumber(sumQty2)}</td>
+        <td>${formatNumber(sumQty3)}</td><td>${formatNumber(sumQty4)}</td>
+        <td>${formatCurrency(sumAmt1)}</td><td>${formatCurrency(sumAmt2)}</td>
+        <td>${formatCurrency(sumAmt3)}</td><td>${formatCurrency(sumAmt4)}</td>
         <td style="color: #2e7d32;">${formatCurrency(totalAllAmount)}</td>
     `;
-
-    let trLimit = document.createElement('tr');
-    trLimit.className = 'row-limit';
-    trLimit.innerHTML = `
-        <td colspan="3" style="text-align: center;">SỐ LƯỢNG GIỚI HẠN / TIỀN TỐI ĐA</td>
-        <td style="color: #d84315;">${formatNumber(limitA1)}</td>
-        <td style="color: #d84315;">${formatNumber(limitA2)}</td>
-        <td style="color: #d84315;">${formatNumber(limitA3)}</td>
-        <td style="color: #d84315;">${formatNumber(limitA4)}</td>
-        <td style="color: #c62828;">${formatCurrency(maxAmtA1)}</td>
-        <td style="color: #c62828;">${formatCurrency(maxAmtA2)}</td>
-        <td style="color: #c62828;">${formatCurrency(maxAmtA3)}</td>
-        <td style="color: #c62828;">${formatCurrency(maxAmtA4)}</td>
-        <td style="color: #c62828; font-size: 1.05em;">${formatCurrency(grandTotalMaxAmount)}</td>
-    `;
-
     tfoot.appendChild(trTotal);
-    tfoot.appendChild(trLimit);
 }
 
-// 5. Hàm lọc và điều khiển bật/tắt nút Tạo biên bản
 function applyFilter() {
     const unitVal = document.getElementById('unit-filter').value;
     const monthVal = document.getElementById('month-filter').value;
@@ -459,19 +282,12 @@ function applyFilter() {
     });
 
     renderTable(currentFilteredData);
-
-    const btnCreate = document.getElementById('btn-create-doc');
-    if (unitVal !== "" && monthVal !== "" && currentFilteredData.length > 0) {
-        btnCreate.disabled = false;
-    } else {
-        btnCreate.disabled = true;
-    }
+    document.getElementById('btn-create-doc').disabled = !(unitVal !== "" && monthVal !== "" && currentFilteredData.length > 0);
 }
 
 function populateFilters() {
     const unitSelect = document.getElementById('unit-filter');
     const monthSelect = document.getElementById('month-filter');
-
     let units = [...new Set(allData.map(item => item.unit))].filter(Boolean);
     let months = [...new Set(allData.map(item => item.month))].filter(Boolean);
 
@@ -482,31 +298,36 @@ function populateFilters() {
     months.forEach(m => monthSelect.innerHTML += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`);
 }
 
-// 6. TẠO NỘI DUNG BIÊN BẢN CHUẨN ĐỊNH DẠNG FILE GỐC
+// Xử lý chuẩn chuỗi tháng (tránh bị lặp /2026/2026)
+function getCleanMonth(monthStr) {
+    if (!monthStr) return "";
+    let clean = monthStr.toString().replace(/\/2026/g, "").replace(/2026/g, "").trim();
+    return clean;
+}
+
+// 6. XEM TRƯỚC BIÊN BẢN CHUẨN 100% VĂN BẢN GỐC
 function openDocModal() {
     if (currentFilteredData.length === 0) return;
 
     let item = currentFilteredData[0];
-    let today = new Date();
+    let monthOnly = getCleanMonth(item.month);
+    
+    // Gán dữ liệu B1, B2, B3, B4
+    let b1 = item.b1 || item.unit;
+    let b2 = item.b2 || "";
+    let b3 = item.b3 || "";
+    let b4 = item.b4 || "";
 
-    // Lấy thông tin H, I, J, K theo quy ước B1, B2, B3, B4
-    let b1 = item.b1 || item.unit; // Cột H
-    let b2 = item.b2 || "TP. Hà Nội"; // Cột I
-    let b3 = item.b3 || ".................."; // Cột J
-    let b4 = item.b4 || ".................."; // Cột K
-    let monthStr = item.month || (today.getMonth() + 1);
+    let p1 = priceMap['A1'].price;
+    let p2 = priceMap['A2'].price;
+    let p3 = priceMap['A3'].price;
+    let p4 = priceMap['A4'].price;
 
-    let p1 = priceMap['A1'] ? priceMap['A1'].price : 74600;
-    let p2 = priceMap['A2'] ? priceMap['A2'].price : 81300;
-    let p3 = priceMap['A3'] ? priceMap['A3'].price : 87000;
-    let p4 = priceMap['A4'] ? priceMap['A4'].price : 90600;
-
-    let amt1 = item.qty1 * p1; // Nước bình vòi 18,5l
-    let amt2 = item.qty2 * p2; // Nước bình úp 19l
+    let amt1 = item.qty1 * p1; // Nước vòi 18,5l
+    let amt2 = item.qty2 * p2; // Nước úp 19l
     let amt3 = item.qty3 * p3; // Chai 0.35l
     let amt4 = item.qty4 * p4; // Chai 0.5l
     let totalAmt = amt1 + amt2 + amt3 + amt4;
-
     let totalText = docSoThanhChu(totalAmt);
 
     let docHTML = `
@@ -521,7 +342,7 @@ function openDocModal() {
 
         <div class="doc-title">
             BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG
-            <span class="doc-subtitle">(Tháng ${escapeHtml(monthStr)}/2026)</span>
+            <span class="doc-subtitle">(Tháng ${escapeHtml(monthOnly)}/2026)</span>
         </div>
 
         <p class="doc-p">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
@@ -545,7 +366,7 @@ function openDocModal() {
         <p class="doc-p">Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
 
         <p class="doc-p"><strong>1. Nội dung nghiệm thu:</strong><br>
-        Trong tháng ${escapeHtml(monthStr)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
+        Trong tháng ${escapeHtml(monthOnly)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
 
         <table class="doc-table">
             <thead>
@@ -602,13 +423,13 @@ function openDocModal() {
                     <td style="text-align: right;">${formatNumber(totalAmt)}</td>
                 </tr>
                 <tr>
-                    <td colspan="8" style="text-align: left; font-style: normal;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
+                    <td colspan="8" style="text-align: left;">Bằng chữ số tiền thanh toán tháng này: <strong>${totalText}</strong></td>
                 </tr>
             </tbody>
         </table>
 
         <p class="doc-p">Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
-        <p class="doc-p"><strong>2.</strong> Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</p>
+        <p class="doc-p"><strong>2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</strong></p>
         <p class="doc-p">Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
 
         <table class="doc-signatures-table">
@@ -635,58 +456,279 @@ function closeDocModal() {
     document.getElementById('docModal').style.display = 'none';
 }
 
-// 7. HÀM XUẤT TRỰC TIẾP FILE WORD (.DOCX) CHUẨN ĐỊNH DẠNG
-function downloadWordDoc() {
-    let content = document.getElementById('doc-preview-container').innerHTML;
-    let unitVal = document.getElementById('unit-filter').value || "Don_Vi";
-    let monthVal = document.getElementById('month-filter').value || "Thang";
+// 7. XUẤT FILE WORD BINARY CHUẨN MỞ MỌI PHIÊN BẢN (dùng docx.js)
+async function downloadWordDoc() {
+    if (currentFilteredData.length === 0) return;
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, VerticalAlign, BorderStyle } = docx;
 
-    // Chuẩn hóa HTML nhúng CSS của Microsoft Office Word
-    let header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' 
-                        xmlns:w='urn:schemas-microsoft-com:office:word' 
-                        xmlns='http://www.w3.org/TR/REC-html40'>
-    <head>
-        <meta charset='utf-8'>
-        <title>Biên bản nghiệm thu</title>
-        <style>
-            @page Section1 {
-                size: 21.0cm 29.7cm;
-                margin: 2.0cm 1.5cm 2.0cm 3.0cm;
-                mso-header-margin: 35.4pt;
-                mso-footer-margin: 35.4pt;
-                mso-paper-source: 0;
+    let item = currentFilteredData[0];
+    let monthOnly = getCleanMonth(item.month);
+
+    let b1 = item.b1 || item.unit;
+    let b2 = item.b2 || "";
+    let b3 = item.b3 || "";
+    let b4 = item.b4 || "";
+
+    let p1 = priceMap['A1'].price;
+    let p2 = priceMap['A2'].price;
+    let p3 = priceMap['A3'].price;
+    let p4 = priceMap['A4'].price;
+
+    let amt1 = item.qty1 * p1;
+    let amt2 = item.qty2 * p2;
+    let amt3 = item.qty3 * p3;
+    let amt4 = item.qty4 * p4;
+    let totalAmt = amt1 + amt2 + amt3 + amt4;
+    let totalText = docSoThanhChu(totalAmt);
+
+    const doc = new Document({
+        styles: {
+            default: {
+                document: {
+                    run: { font: "Times New Roman", size: 26 } // 13pt
+                }
             }
-            div.Section1 { page: Section1; }
-            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.25; }
-            table { border-collapse: collapse; }
-            td, th { font-family: 'Times New Roman', serif; }
-            .doc-header-table { width: 100%; border: none; margin-bottom: 15px; }
-            .doc-header-table td { border: none; text-align: center; font-size: 12pt; }
-            .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 15px 0 20px 0; }
-            .doc-subtitle { font-size: 13pt; font-weight: normal; }
-            .doc-p { text-align: justify; margin: 6px 0; }
-            .doc-table { width: 100%; margin: 12px 0; font-size: 11pt; }
-            .doc-table th, .doc-table td { border: 1pt solid black; padding: 4pt; }
-            .doc-signatures-table { width: 100%; border: none; margin-top: 25pt; }
-            .doc-signatures-table td { border: none; text-align: center; font-size: 13pt; width: 50%; vertical-align: top; }
-        </style>
-    </head>
-    <body>
-        <div class="Section1">
-            ${content}
-        </div>
-    </body>
-    </html>`;
+        },
+        sections: [{
+            properties: {
+                page: {
+                    margin: { top: 1134, bottom: 1134, left: 1701, right: 850 } // Lề 2-2-3-1.5cm
+                }
+            },
+            children: [
+                // Tiêu ngữ
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                        new TextRun({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24 }),
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                        new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, underline: {}, size: 26 }),
+                    ]
+                }),
+                new Paragraph({ text: "", spacing: { after: 200 } }),
 
-    let blob = new Blob(['\ufeff' + header], {
-        type: 'application/msword'
+                // Tên biên bản
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                        new TextRun({ text: "BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG", bold: true, size: 28 }),
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                    children: [
+                        new TextRun({ text: `(Tháng     ${monthOnly}/2026)`, italics: true, size: 26 }),
+                    ]
+                }),
+
+                // Nội dung căn cứ
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun("Căn cứ Hợp đồng kinh tế số     /2026/HAN-CH ngày     tháng     năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;")
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun(`Căn cứ thực tế bàn giao với ${b1} trong tháng.`)
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun(`Hôm nay, ngày     tháng    năm 2026, tại ${b1}, địa chỉ: ${b2}, chúng tôi gồm có:`)
+                    ]
+                }),
+
+                // Bên A
+                new Paragraph({
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun({ text: `${b1.toUpperCase()}`, bold: true }),
+                        new TextRun(`\nĐịa chỉ: ${b2}\nĐiện thoại: 02438515469\nĐại diện là Ông/ Bà: `),
+                        new TextRun({ text: `${b3}`, bold: true }),
+                        new TextRun(`             Chức vụ: `),
+                        new TextRun({ text: `${b4}`, bold: true })
+                    ]
+                }),
+
+                // Bên B
+                new Paragraph({
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun({ text: "Nhà thầu:\n", bold: true }),
+                        new TextRun("Tên nhà thầu: "), new TextRun({ text: "CÔNG TY CỔ PHẦN IN HÀ NỘI\n", bold: true }),
+                        new TextRun("Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội\nĐiện thoại: 024. 39437063\nTài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng\nMã số thuế: 0101181842\nĐại diện là Bà: "),
+                        new TextRun({ text: "Nguyễn Thị Oanh\n", bold: true }),
+                        new TextRun("Chức vụ: "), new TextRun({ text: "Tổng giám đốc", bold: true })
+                    ]
+                }),
+
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun(`Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${b1} như sau:`)
+                    ]
+                }),
+
+                new Paragraph({
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun({ text: "1. Nội dung nghiệm thu:\n", bold: true }),
+                        new TextRun(`Trong tháng       ${monthOnly}/2026, nhà thầu đã bàn giao cho ${b1} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:`)
+                    ]
+                }),
+
+                // Bảng dữ liệu 8 cột
+                new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: [
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "STT", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Danh mục hàng hóa", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Đơn vị tính", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Đơn giá(VND)", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số lượng đã bàn giao lũy kế đến tháng trước liền kề", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số tiền đã thanh toán lũy kế đến tháng trước liền kề", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số lượng bàn giao đợt này", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "Số tiền thanh toán đợt này (VND)", bold: true, alignment: AlignmentType.CENTER })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "1", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng bình úp 19l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Bình", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p1), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty2), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt2), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "2", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng bình vòi 18,5l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Bình", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p2), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty1), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt1), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "3", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng chai 0,35l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Thùng", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p3), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty3), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt3), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ children: [new Paragraph({ text: "4", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph("Nước khoáng thiên nhiên đóng chai 0,5l")] }),
+                                new TableCell({ children: [new Paragraph({ text: "Thùng", alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(p4), alignment: AlignmentType.RIGHT })] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph("")] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(item.qty4), alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(amt4), alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ columnSpan: 7, children: [new Paragraph({ text: "Tổng cộng", bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: formatNumber(totalAmt), bold: true, alignment: AlignmentType.RIGHT })] }),
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                new TableCell({ columnSpan: 8, children: [new Paragraph({ children: [new TextRun("Bằng chữ số tiền thanh toán tháng này: "), new TextRun({ text: totalText, bold: true })] })] }),
+                            ]
+                        })
+                    ]
+                }),
+
+                new Paragraph({ text: "", spacing: { after: 100 } }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun("Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.")
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                    children: [
+                        new TextRun({ text: "2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.", bold: true })
+                    ]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                    children: [
+                        new TextRun("Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.")
+                    ]
+                }),
+
+                // Khối Chữ ký (Bảng ẩn border)
+                new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    borders: {
+                        top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+                        left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE },
+                        insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE }
+                    },
+                    rows: [
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    children: [
+                                        new Paragraph({ text: "ĐẠI DIỆN BÊN A", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "KT. TRƯỞNG THUẾ CƠ SỞ", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "PHÓ TRƯỞNG THUẾ CƠ SỞ", bold: true, alignment: AlignmentType.CENTER }),
+                                    ]
+                                }),
+                                new TableCell({
+                                    children: [
+                                        new Paragraph({ text: "ĐẠI DIỆN BÊN B", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "TỔNG GIÁM ĐỐC", bold: true, alignment: AlignmentType.CENTER }),
+                                        new Paragraph({ text: "\n\n\n" }),
+                                        new Paragraph({ text: "Nguyễn Thị Oanh", bold: true, alignment: AlignmentType.CENTER }),
+                                    ]
+                                })
+                            ]
+                        })
+                    ]
+                })
+            ]
+        }]
     });
 
-    let fileName = `Bien_ban_nghiem_thu_${unitVal.replace(/\s+/g, '_')}_T${monthVal}.docx`;
+    const blob = await Packer.toBlob(doc);
+    let fileName = `Bien_ban_nghiem_thu_${b1.replace(/\s+/g, '_')}_T${monthOnly}.docx`;
     saveAs(blob, fileName);
 }
 
-// 8. Đọc số tiền thành chữ Tiếng Việt chuẩn
 function docSoThanhChu(so) {
     if (so === 0) return "Không đồng";
     const ChuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
@@ -744,7 +786,6 @@ function docSoThanhChu(so) {
     return str + " đồng";
 }
 
-// Các hàm bổ trợ
 function formatNumber(num) {
     if (!num || isNaN(num)) return '0';
     return new Intl.NumberFormat('vi-VN').format(num);
