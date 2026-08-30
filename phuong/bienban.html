@@ -1,274 +1,615 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý & Báo cáo Nước uống</title>
-    <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #1e5631; margin-top: 0; text-align: center; }
-        .filter-box { display: flex; gap: 15px; background: #eef5f0; padding: 15px; border-radius: 6px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
-        label { font-weight: bold; color: #2d572c; }
-        select, button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        button { background-color: #1e5631; color: white; border: none; cursor: pointer; transition: 0.2s; font-weight: bold; }
-        button:hover { background-color: #143d21; }
-        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
-        .main-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .main-table th, .main-table td { border: 1px solid #dddddd; padding: 10px; text-align: center; font-size: 13px; }
-        .main-table th { background-color: #2e7d32; color: white; }
-        .main-table tr:nth-child(even) { background-color: #f9f9f9; }
-        .text-right { text-align: right !important; }
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; color: white; font-size: 18px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
+  <!-- docx.js & FileSaver.js phục vụ tạo & tải file Word trực tiếp trên trình duyệt -->
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 1250px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1 { text-align: center; color: #1e5631; font-size: 24px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; }
+    
+    .filter-box { background-color: #edf5ee; padding: 15px 20px; border-radius: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; border: 1px solid #d4e5d7; }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    .filter-group label { font-weight: 700; color: #1e5631; font-size: 14px; text-transform: uppercase; }
+    .filter-group select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; outline: none; background: #fff; font-size: 14px; min-width: 160px; }
+    
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; background: #c5d6c7; color: #4a634e; }
+    .btn.active { background: #2e7d32; color: #fff; box-shadow: 0 2px 4px rgba(46,125,50,0.3); }
+    .btn.active:hover { background: #1b5e20; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .table-responsive { overflow-x: auto; border: 1px solid #1e5631; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; background: #fff; }
+    th, td { border: 1px solid #c5d6c7; padding: 8px 6px; }
+    thead th { background-color: #1e5631; color: #ffffff; font-weight: 600; vertical-align: middle; }
+    thead tr:nth-child(2) th { background-color: #2e7d32; }
+    tbody tr:nth-child(even) { background-color: #f9fbf9; }
+    tbody tr:hover { background-color: #eaf3eb; }
+    .total-row td { background-color: #e2efe4; font-weight: 700; color: #1e5631; font-size: 14px; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; padding-left: 10px; }
+
+    .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); justify-content: center; align-items: center; z-index: 1000; font-weight: bold; font-size: 18px; color: #1e5631; }
+  </style>
 </head>
 <body>
 
+<div class="loading-overlay" id="loading">Đang xử lý dữ liệu...</div>
+
 <div class="container">
-    <h2>HỆ THỐNG THỐNG KÊ & XUẤT BÁO CÁO NƯỚC UỐNG</h2>
-    
-    <div class="filter-box">
-        <div>
-            <label for="unit-filter">Đơn vị (Thuế cơ sở):</label>
-            <select id="unit-filter"><option value="">-- Tất cả đơn vị --</option></select>
-        </div>
-        <div>
-            <label for="month-filter">Tháng:</label>
-            <select id="month-filter"><option value="">-- Tất cả tháng --</option></select>
-        </div>
-        <button id="btn-export-doc" disabled onclick="generateDocReport()">Tạo báo cáo (.docx)</button>
+  <h1>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h1>
+
+  <div class="filter-box">
+    <div class="filter-group">
+      <label for="selectDonVi">ĐƠN VỊ:</label>
+      <select id="selectDonVi" onchange="filterData()">
+        <option value="">-- Tất cả đơn vị --</option>
+      </select>
     </div>
 
-    <table class="main-table">
-        <thead>
-            <tr>
-                <th rowspan="2">STT</th>
-                <th rowspan="2">Đơn vị</th>
-                <th rowspan="2">Tháng</th>
-                <th colspan="4">Số lượng đặt</th>
-                <th rowspan="2">Tổng thành tiền (VNĐ)</th>
-            </tr>
-            <tr>
-                <th>A1 (18.5L)</th>
-                <th>A2 (19L)</th>
-                <th>A3 (0.35L)</th>
-                <th>A4 (0.5L)</th>
-            </tr>
-        </thead>
-        <tbody id="table-body">
-            <tr><td colspan="8">Đang tải dữ liệu từ Google Sheets...</td></tr>
-        </tbody>
-        <tfoot id="table-foot"></tfoot>
+    <div class="filter-group">
+      <label for="selectThang">THÁNG:</label>
+      <select id="selectThang" onchange="filterData()">
+        <option value="">-- Tất cả tháng --</option>
+      </select>
+    </div>
+
+    <button id="btnBienBanDonVi" class="btn" onclick="exportBienBanDonVi()" disabled>Biên bản Đơn vị</button>
+    <button id="btnBienBanTongThe" class="btn" onclick="exportBienBanTongThe()" disabled>Biên bản Tổng thể (Hình 7)</button>
+  </div>
+
+  <div class="table-responsive">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th rowspan="2" style="width: 40px;">STT</th>
+          <th rowspan="2" style="width: 120px;">Tên đơn vị</th>
+          <th rowspan="2" style="width: 80px;">Tháng</th>
+          <th colspan="4">Số lượng đặt (Bình/Chai)</th>
+          <th colspan="4">Thành tiền từng loại (VNĐ)</th>
+          <th rowspan="2" style="width: 110px;">Tổng tiền</th>
+        </tr>
+        <tr>
+          <th>Loại 1 (18.5L)</th>
+          <th>Loại 2 (19L)</th>
+          <th>Loại 3 (0.35L)</th>
+          <th>Loại 4 (0.5L)</th>
+          <th>Tiền Loại 1</th>
+          <th>Tiền Loại 2</th>
+          <th>Tiền Loại 3</th>
+          <th>Tiền Loại 4</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot>
+        <tr class="total-row" id="tableFooter"></tr>
+      </tfoot>
     </table>
+  </div>
 </div>
 
-<div id="loading" class="loading-overlay">Đang kết nối API và tạo file Word, vui lòng đợi...</div>
-
 <script>
-    // Dán URL Web App Google Apps Script của thầy vào đây
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyioQj_Msk8evz2bwTS1vxAazpaBtI0XLHHVZGNFWEWwLXAhVfHi4PoRGSXw6D8PdEI/exec;
-    
-    const SHEET_ID = '1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w';
-    let rawData = [];
-    let prices = { A1: 0, A2: 0, A3: 0, A4: 0 };
-    let productNames = {
-        A1: 'Nước khoáng vòi 18.5L',
-        A2: 'Nước khoáng úp 19L',
-        A3: 'Nước khoáng chai 0.35L',
-        A4: 'Nước khoáng chai 0.5L'
+  const SPREADSHEET_ID = '1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w';
+  const URL_THONG_TIN = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Thong_tin_chung`;
+  const URL_SO_LUONG = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=So_luong_dat`;
+
+  let prices = [74600, 81300, 72500, 90500];
+  let productNames = [
+    "Nước uống đóng bình/chai Loại 1 (18.5L)",
+    "Nước uống đóng bình/chai Loại 2 (19L)",
+    "Nước uống đóng chai Loại 3 (0.35L)",
+    "Nước uống đóng chai Loại 4 (0.5L)"
+  ];
+  let productUnits = ["Bình", "Bình", "Thùng", "Thùng"];
+
+  let rawData = [];
+  let filteredData = [];
+
+  const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType, WidthType, BorderStyle } = docx;
+
+  window.onload = function() {
+    loadSheetData();
+  };
+
+  async function loadSheetData() {
+    showLoading(true);
+    try {
+      const resPrices = await fetch(URL_THONG_TIN);
+      const textPrices = await resPrices.text();
+      parsePricesJson(textPrices);
+
+      const resOrders = await fetch(URL_SO_LUONG);
+      const textOrders = await resOrders.text();
+      parseOrdersJson(textOrders);
+
+      populateFilters();
+      filterData();
+    } catch (err) {
+      loadMockData();
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function parsePricesJson(text) {
+    try {
+      const json = JSON.parse(text.substring(47, text.length - 2));
+      const rows = json.table.rows;
+      if (rows && rows.length > 0) {
+        for (let i = 0; i < 4; i++) {
+          if (rows[i] && rows[i].c && rows[i].c[1] && rows[i].c[1].v) {
+            prices[i] = parseFloat(rows[i].c[1].v) || prices[i];
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  function parseOrdersJson(text) {
+    try {
+      const json = JSON.parse(text.substring(47, text.length - 2));
+      const rows = json.table.rows;
+      rawData = [];
+      rows.forEach((r, idx) => {
+        if (!r.c) return;
+        const donVi = r.c[0] ? String(r.c[0].v || '') : '';
+        const thang = r.c[1] ? String(r.c[1].v || '') : '';
+        const q1 = r.c[2] ? (parseInt(r.c[2].v) || 0) : 0;
+        const q2 = r.c[3] ? (parseInt(r.c[3].v) || 0) : 0;
+        const q3 = r.c[4] ? (parseInt(r.c[4].v) || 0) : 0;
+        const q4 = r.c[5] ? (parseInt(r.c[5].v) || 0) : 0;
+        
+        const b2 = r.c[6] ? String(r.c[6].v || '') : '';
+        const b3 = r.c[7] ? String(r.c[7].v || '') : '';
+        const b4 = r.c[8] ? String(r.c[8].v || '') : '';
+
+        if (donVi && thang) {
+          rawData.push({
+            id: idx + 1, donVi: donVi.trim(), thang: thang.trim(),
+            q: [q1, q2, q3, q4], b2: b2.trim(), b3: b3.trim(), b4: b4.trim()
+          });
+        }
+      });
+    } catch(e) {}
+  }
+
+  function loadMockData() {
+    rawData = [
+      { id: 1, donVi: "Thuế 1", thang: "8/2026", q: [12, 20, 30, 0], b2: "Số 10 Nguyễn Trãi, Thanh Xuân, Hà Nội", b3: "Nguyễn Văn A", b4: "Trưởng Thuế cơ sở" },
+      { id: 2, donVi: "Thuế 2", thang: "8/2026", q: [200, 3, 15, 20], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở" },
+      { id: 3, donVi: "Thuế 3", thang: "9/2026", q: [30, 25, 36, 12], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở" },
+      { id: 4, donVi: "Thuế 2", thang: "9/2026", q: [62, 34, 52, 32], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở" },
+      { id: 5, donVi: "Thuế 5", thang: "9/2026", q: [52, 14, 23, 62], b2: "Số 150 Cầu Giấy, Cầu Giấy, Hà Nội", b3: "Phạm Văn D", b4: "Trưởng Thuế cơ sở" },
+      { id: 6, donVi: "Thuế 3", thang: "9/2026", q: [25, 14, 23, 62], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở" }
+    ];
+    populateFilters();
+    filterData();
+  }
+
+  function populateFilters() {
+    const selectDV = document.getElementById('selectDonVi');
+    const selectTH = document.getElementById('selectThang');
+
+    const donVis = [...new Set(rawData.map(item => item.donVi))];
+    const thangs = [...new Set(rawData.map(item => item.thang))];
+
+    selectDV.innerHTML = '<option value="">-- Tất cả đơn vị --</option>';
+    donVis.forEach(dv => selectDV.innerHTML += `<option value="${dv}">${dv}</option>`);
+
+    selectTH.innerHTML = '<option value="">-- Tất cả tháng --</option>';
+    thangs.forEach(th => selectTH.innerHTML += `<option value="${th}">${th}</option>`);
+  }
+
+  function filterData() {
+    const selectedDV = document.getElementById('selectDonVi').value;
+    const selectedTH = document.getElementById('selectThang').value;
+
+    filteredData = rawData.filter(item => {
+      const matchDV = !selectedDV || item.donVi === selectedDV;
+      const matchTH = !selectedTH || item.thang === selectedTH;
+      return matchDV && matchTH;
+    });
+
+    renderTable();
+
+    const btnDV = document.getElementById('btnBienBanDonVi');
+    const btnTT = document.getElementById('btnBienBanTongThe');
+
+    if (selectedDV && selectedTH) {
+      btnDV.disabled = false;
+      btnDV.classList.add('active');
+    } else {
+      btnDV.disabled = true;
+      btnDV.classList.remove('active');
+    }
+
+    if (selectedTH) {
+      btnTT.disabled = false;
+      btnTT.classList.add('active');
+    } else {
+      btnTT.disabled = true;
+      btnTT.classList.remove('active');
+    }
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    let sumQ = [0, 0, 0, 0];
+    let sumMoney = [0, 0, 0, 0];
+    let totalGrand = 0;
+
+    filteredData.forEach((item, index) => {
+      const money = item.q.map((qty, i) => Math.round(qty * prices[i]));
+      const totalRow = money.reduce((a, b) => a + b, 0);
+
+      item.q.forEach((qty, i) => sumQ[i] += qty);
+      money.forEach((m, i) => sumMoney[i] += m);
+      totalGrand += totalRow;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td class="text-left">${item.donVi}</td>
+        <td>${item.thang}</td>
+        <td>${item.q[0] || ''}</td>
+        <td>${item.q[1] || ''}</td>
+        <td>${item.q[2] || ''}</td>
+        <td>${item.q[3] || ''}</td>
+        <td class="text-right">${formatNum(money[0])}</td>
+        <td class="text-right">${formatNum(money[1])}</td>
+        <td class="text-right">${formatNum(money[2])}</td>
+        <td class="text-right">${formatNum(money[3])}</td>
+        <td class="text-right" style="font-weight:bold;">${formatNum(totalRow)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const tfoot = document.getElementById('tableFooter');
+    tfoot.innerHTML = `
+      <td colspan="3" class="text-center">TỔNG CỘNG ĐĂNG KÝ</td>
+      <td>${sumQ[0]}</td>
+      <td>${sumQ[1]}</td>
+      <td>${sumQ[2]}</td>
+      <td>${sumQ[3]}</td>
+      <td class="text-right">${formatNum(sumMoney[0])}</td>
+      <td class="text-right">${formatNum(sumMoney[1])}</td>
+      <td class="text-right">${formatNum(sumMoney[2])}</td>
+      <td class="text-right">${formatNum(sumMoney[3])}</td>
+      <td class="text-right" style="color:#1b5e20;">${formatNum(totalGrand)}</td>
+    `;
+  }
+
+  function formatNum(num) {
+    if (!num) return '0';
+    return num.toLocaleString('vi-VN');
+  }
+
+  function showLoading(show) {
+    document.getElementById('loading').style.display = show ? 'flex' : 'none';
+  }
+
+  async function exportBienBanDonVi() {
+    const selectedDV = document.getElementById('selectDonVi').value;
+    const selectedTH = document.getElementById('selectThang').value;
+
+    if (!selectedDV || !selectedTH) {
+      alert("Vui lòng chọn đầy đủ Đơn vị và Tháng!");
+      return;
+    }
+
+    const item = rawData.find(d => d.donVi === selectedDV && d.thang === selectedTH);
+    if (!item) {
+      alert("Không tìm thấy dữ liệu!");
+      return;
+    }
+
+    await generateDocxForUnit(item);
+  }
+
+  async function exportBienBanTongThe() {
+    const selectedTH = document.getElementById('selectThang').value;
+    if (!selectedTH) {
+      alert("Vui lòng chọn Tháng để xuất Biên bản Tổng thể!");
+      return;
+    }
+
+    const items = rawData.filter(d => d.thang === selectedTH);
+    if (items.length === 0) {
+      alert("Không có dữ liệu trong tháng này!");
+      return;
+    }
+
+    showLoading(true);
+    try {
+      for (let item of items) {
+        await generateDocxForUnit(item);
+      }
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function getAccumulatedBefore(donVi, currentThang) {
+    const parseThang = (str) => {
+      const parts = str.split('/');
+      return { m: parseInt(parts[0]), y: parseInt(parts[1]) };
     };
 
-    window.onload = async function() {
-        await loadGeneralInfo();
-        await loadQuantityData();
-    };
+    const cur = parseThang(currentThang);
+    let accumQ = [0, 0, 0, 0];
 
-    async function loadGeneralInfo() {
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Thong_tin_chung`;
-        try {
-            const response = await fetch(url);
-            const text = await response.text();
-            const rows = text.split('\n').map(r => r.split(','));
-            // Lấy đơn giá mẫu cho A1, A2, A3, A4 (Tùy theo dòng trong sheet của thầy)
-            prices.A1 = parseFloat(rows[1]?.[5]?.replace(/[^0-9.]/g, '')) || 45000;
-            prices.A2 = parseFloat(rows[2]?.[5]?.replace(/[^0-9.]/g, '')) || 45000;
-            prices.A3 = parseFloat(rows[3]?.[5]?.replace(/[^0-9.]/g, '')) || 80000;
-            prices.A4 = parseFloat(rows[4]?.[5]?.replace(/[^0-9.]/g, '')) || 90000;
-        } catch(e) { console.error("Lỗi đọc Thong_tin_chung:", e); }
-    }
-
-    async function loadQuantityData() {
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=So_luong_dat`;
-        try {
-            const response = await fetch(url);
-            const text = await response.text();
-            const lines = text.split('\n');
-            rawData = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-                if(cols.length >= 6) {
-                    const a1 = parseInt(cols[2]) || 0;
-                    const a2 = parseInt(cols[3]) || 0;
-                    const a3 = parseInt(cols[4]) || 0;
-                    const a4 = parseInt(cols[5]) || 0;
-                    const total = (a1*prices.A1) + (a2*prices.A2) + (a3*prices.A3) + (a4*prices.A4);
-
-                    rawData.push({
-                        unit: cols[0],
-                        month: cols[1],
-                        a1: a1, a2: a2, a3: a3, a4: a4,
-                        totalAmount: total,
-                        b2: cols[6] || '', // Địa chỉ
-                        b3: cols[7] || '', // Đại diện
-                        b4: cols[8] || ''  // Chức vụ
-                    });
-                }
-            }
-            populateFilters();
-            renderTable(rawData);
-        } catch(e) { console.error("Lỗi đọc So_luong_dat:", e); }
-    }
-
-    function populateFilters() {
-        const units = [...new Set(rawData.map(d => d.unit))];
-        const months = [...new Set(rawData.map(d => d.month))];
-
-        const uSel = document.getElementById('unit-filter');
-        const mSel = document.getElementById('month-filter');
-
-        units.forEach(u => uSel.innerHTML += `<option value="${u}">${u}</option>`);
-        months.forEach(m => mSel.innerHTML += `<option value="${m}">${m}</option>`);
-
-        uSel.onchange = applyFilter;
-        mSel.onchange = applyFilter;
-    }
-
-    function applyFilter() {
-        const uVal = document.getElementById('unit-filter').value;
-        const mVal = document.getElementById('month-filter').value;
-
-        const filtered = rawData.filter(d => {
-            return (!uVal || d.unit === uVal) && (!mVal || d.month === mVal);
-        });
-
-        document.getElementById('btn-export-doc').disabled = !(uVal && mVal);
-        renderTable(filtered);
-    }
-
-    function renderTable(data) {
-        const tbody = document.getElementById('table-body');
-        tbody.innerHTML = '';
-
-        let sumA1 = 0, sumA2 = 0, sumA3 = 0, sumA4 = 0, sumTotal = 0;
-
-        data.forEach((d, idx) => {
-            sumA1 += d.a1; sumA2 += d.a2; sumA3 += d.a3; sumA4 += d.a4;
-            sumTotal += d.totalAmount;
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td>${d.unit}</td>
-                    <td>${d.month}</td>
-                    <td>${d.a1}</td>
-                    <td>${d.a2}</td>
-                    <td>${d.a3}</td>
-                    <td>${d.a4}</td>
-                    <td class="text-right">${d.totalAmount.toLocaleString('vi-VN')}</td>
-                </tr>
-            `;
-        });
-
-        document.getElementById('table-foot').innerHTML = `
-            <tr style="font-weight:bold; background:#e8f5e9;">
-                <td colspan="3">TỔNG CỘNG</td>
-                <td>${sumA1}</td>
-                <td>${sumA2}</td>
-                <td>${sumA3}</td>
-                <td>${sumA4}</td>
-                <td class="text-right">${sumTotal.toLocaleString('vi-VN')} VNĐ</td>
-            </tr>
-        `;
-    }
-
-    // Chuyển số thành chữ
-    function docSoThanhChu(so) {
-        if (so === 0) return "Không đồng";
-        const chuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
-        function docNhomBaSo(n) {
-            let tr = Math.floor(n / 100), ch = Math.floor((n % 100) / 10), dv = n % 10, s = "";
-            if (tr > 0 || ch > 0 || dv > 0) {
-                s += chuSo[tr] + " trăm ";
-                if (ch === 0 && dv > 0) s += "lẻ ";
-                if (ch === 1) s += "mười ";
-                if (ch > 1) s += chuSo[ch] + " mươi ";
-                if (dv === 1 && ch > 1) s += "mốt";
-                else if (dv === 5 && ch > 0) s += "lăm";
-                else if (dv > 0) s += chuSo[dv];
-            }
-            return s.trim();
+    rawData.forEach(d => {
+      if (d.donVi === donVi) {
+        const t = parseThang(d.thang);
+        if (t.y < cur.y || (t.y === cur.y && t.m < cur.m)) {
+          d.q.forEach((qty, i) => accumQ[i] += qty);
         }
-        let str = "", ty = Math.floor(so / 1e9), trieu = Math.floor((so % 1e9) / 1e6), nghin = Math.floor((so % 1e6) / 1000), dong = so % 1000;
-        if (ty > 0) str += docNhomBaSo(ty) + " tỷ ";
-        if (trieu > 0) str += docNhomBaSo(trieu) + " triệu ";
-        if (nghin > 0) str += docNhomBaSo(nghin) + " nghìn ";
-        if (dong > 0) str += docNhomBaSo(dong);
-        str = str.trim() + " đồng chẵn.";
-        return str.charAt(0).toUpperCase() + str.slice(1);
+      }
+    });
+
+    const accumMoney = accumQ.map((qty, i) => Math.round(qty * prices[i]));
+    return { accumQ, accumMoney };
+  }
+
+  async function generateDocxForUnit(item) {
+    const donVi = item.donVi;
+    const thangStr = item.thang;
+    const b2_diaChi = item.b2 || "Địa chỉ Thuế cơ sở";
+    const b3_nguoiDaiDien = item.b3 || "Trưởng Thuế cơ sở";
+    const b4_chucVu = item.b4 || "Trưởng Thuế cơ sở";
+
+    const { accumQ, accumMoney } = getAccumulatedBefore(donVi, thangStr);
+
+    const curQ = item.q;
+    const curMoney = curQ.map((qty, i) => Math.round(qty * prices[i]));
+    const totalCurMoney = curMoney.reduce((a, b) => a + b, 0);
+
+    const moneyInWords = numberToVietnameseWords(totalCurMoney);
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: { margin: { top: 1134, bottom: 1134, left: 1440, right: 1134 } }
+        },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "------------------------", size: 20, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: `BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG`, bold: true, size: 28, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: `(Tháng ${thangStr})`, bold: true, italic: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: "- Căn cứ Hợp đồng kinh tế số 05032025/HĐ-INKH ngày 05/03/2025 về việc cung cấp nước uống đóng bình/chai cho các đơn vị thuộc Thuế cơ sở;", italic: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: `BÊN A (Đơn vị nhận): ${donVi.toUpperCase()}`, bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Địa chỉ: ${b2_diaChi}`, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: `Đại diện: ${b3_nguoiDaiDien}`, size: 24, font: "Times New Roman" }),
+              new TextRun({ text: `    Chức vụ: ${b4_chucVu}`, size: 24, font: "Times New Roman" })
+            ]
+          }),
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: "BÊN B (Nhà thầu): CÔNG TY CỔ PHẦN IN HÀ NỘI", bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Địa chỉ: Đường Phúc Diễn, Phường Phúc Diễn, Quận Bắc Từ Liêm, TP. Hà Nội", size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Đại diện: Bà Nguyễn Thị Oanh", size: 24, font: "Times New Roman" }),
+              new TextRun({ text: "    Chức vụ: Tổng Giám đốc", size: 24, font: "Times New Roman" })
+            ]
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: "Hai bên cùng thống nhất nghiệm thu khối lượng nước uống giao nhận cụ thể như sau:", size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          createDocxTable(accumQ, accumMoney, curQ, curMoney, totalCurMoney),
+
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Số tiền bằng chữ (đợt này): ", bold: true, size: 24, font: "Times New Roman" }),
+              new TextRun({ text: `${moneyInWords}.`, italic: true, size: 24, font: "Times New Roman" })
+            ]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Biên bản được lập thành 04 bản có giá trị pháp lý như nhau, Bên A giữ 01 bản, Bên B giữ 01 bản, Chủ đầu tư giữ 02 bản.", italic: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 300 } }),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE },
+              insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE }
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ĐẠI DIỆN BÊN A", bold: true, size: 24, font: "Times New Roman" })] }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "KT. TRƯỞNG THUẾ CƠ SỞ", bold: true, size: 22, font: "Times New Roman" })] }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: b4_chucVu.toUpperCase(), bold: true, size: 22, font: "Times New Roman" })] }),
+                      new Paragraph({ text: "", spacing: { after: 1200 } }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: b3_nguoiDaiDien, bold: true, size: 24, font: "Times New Roman" })] })
+                    ]
+                  }),
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ĐẠI DIỆN BÊN B", bold: true, size: 24, font: "Times New Roman" })] }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "TỔNG GIÁM ĐỐC", bold: true, size: 22, font: "Times New Roman" })] }),
+                      new Paragraph({ text: "", spacing: { after: 1200 } }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Nguyễn Thị Oanh", bold: true, size: 24, font: "Times New Roman" })] })
+                    ]
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const cleanDVName = donVi.replace(/\s+/g, '_');
+    const cleanThang = thangStr.replace('/', '_');
+    saveAs(blob, `Bien_ban_nghiem_thu_${cleanDVName}_Thang_${cleanThang}.docx`);
+  }
+
+  function createDocxTable(accumQ, accumMoney, curQ, curMoney, totalCurMoney) {
+    const tableHeader = new TableRow({
+      tableHeader: true,
+      children: [
+        createCell("STT", { width: 5, bold: true, align: AlignmentType.CENTER }),
+        createCell("Danh mục hàng hóa", { width: 30, bold: true, align: AlignmentType.CENTER }),
+        createCell("ĐVT", { width: 8, bold: true, align: AlignmentType.CENTER }),
+        createCell("Đơn giá (VNĐ)", { width: 12, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số lượng lũy kế đến tháng trước", { width: 12, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số tiền lũy kế đến tháng trước (VNĐ)", { width: 13, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số lượng đợt này", { width: 10, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số tiền đợt này (VNĐ)", { width: 10, bold: true, align: AlignmentType.CENTER })
+      ]
+    });
+
+    const rows = [tableHeader];
+
+    for (let i = 0; i < 4; i++) {
+      rows.push(new TableRow({
+        children: [
+          createCell((i + 1).toString(), { align: AlignmentType.CENTER }),
+          createCell(productNames[i], { align: AlignmentType.LEFT }),
+          createCell(productUnits[i], { align: AlignmentType.CENTER }),
+          createCell(formatNum(prices[i]), { align: AlignmentType.RIGHT }),
+          createCell(accumQ[i] ? accumQ[i].toString() : "0", { align: AlignmentType.CENTER }),
+          createCell(formatNum(accumMoney[i]), { align: AlignmentType.RIGHT }),
+          createCell(curQ[i] ? curQ[i].toString() : "0", { align: AlignmentType.CENTER }),
+          createCell(formatNum(curMoney[i]), { align: AlignmentType.RIGHT })
+        ]
+      }));
     }
 
-    async function generateDocReport() {
-        const uVal = document.getElementById('unit-filter').value;
-        const mVal = document.getElementById('month-filter').value;
+    const totalAccumMoney = accumMoney.reduce((a, b) => a + b, 0);
+    const totalCurQ = curQ.reduce((a, b) => a + b, 0);
 
-        const record = rawData.find(d => d.unit === uVal && d.month === mVal);
-        if (!record) return alert("Không tìm thấy dữ liệu phù hợp!");
+    rows.push(new TableRow({
+      children: [
+        createCell("TỔNG CỘNG", { colSpan: 4, bold: true, align: AlignmentType.CENTER }),
+        createCell("", { bold: true, align: AlignmentType.CENTER }),
+        createCell(formatNum(totalAccumMoney), { bold: true, align: AlignmentType.RIGHT }),
+        createCell(totalCurQ.toString(), { bold: true, align: AlignmentType.CENTER }),
+        createCell(formatNum(totalCurMoney), { bold: true, align: AlignmentType.RIGHT })
+      ]
+    }));
 
-        document.getElementById('loading').style.display = 'flex';
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: rows
+    });
+  }
 
-        const items = [];
-        if (record.a1 > 0) items.push({ name: productNames.A1, unit: 'Bình 18.5L', quantity: record.a1, price: prices.A1, amount: record.a1 * prices.A1 });
-        if (record.a2 > 0) items.push({ name: productNames.A2, unit: 'Bình 19L', quantity: record.a2, price: prices.A2, amount: record.a2 * prices.A2 });
-        if (record.a3 > 0) items.push({ name: productNames.A3, unit: 'Thùng 0.35L', quantity: record.a3, price: prices.A3, amount: record.a3 * prices.A3 });
-        if (record.a4 > 0) items.push({ name: productNames.A4, unit: 'Thùng 0.5L', quantity: record.a4, price: prices.A4, amount: record.a4 * prices.A4 });
+  function createCell(text, opts = {}) {
+    return new TableCell({
+      columnSpan: opts.colSpan || 1,
+      children: [new Paragraph({
+        alignment: opts.align || AlignmentType.LEFT,
+        children: [new TextRun({ text: text, bold: !!opts.bold, size: 20, font: "Times New Roman" })]
+      })],
+      verticalAlign: docx.VerticalAlign.CENTER
+    });
+  }
 
-        const payload = {
-            unit: record.unit,
-            month: record.month,
-            b2: record.b2,
-            b3: record.b3,
-            b4: record.b4,
-            totalAmountStr: record.totalAmount.toLocaleString('vi-VN'),
-            totalInWords: docSoThanhChu(record.totalAmount),
-            items: items
-        };
+  function numberToVietnameseWords(number) {
+    if (number === 0) return "Không đồng";
+    const defaultNumbers = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+    const units = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
 
-        try {
-            const response = await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
-            });
+    function readGroup(group) {
+      let read = "";
+      let hundreds = Math.floor(group / 100);
+      let tens = Math.floor((group % 100) / 10);
+      let ones = group % 10;
 
-            const result = await response.json();
-            if (result.status === 'success') {
-                // Tải file Word về máy
-                const link = document.createElement('a');
-                link.href = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,' + result.base64;
-                link.download = result.filename;
-                link.click();
-            } else {
-                alert("Lỗi tạo báo cáo: " + result.message);
-            }
-        } catch (e) {
-            alert("Lỗi khi gọi API: " + e.message);
-        } finally {
-            document.getElementById('loading').style.display = 'none';
-        }
+      if (hundreds > 0 || tens > 0 || ones > 0) read += defaultNumbers[hundreds] + " trăm ";
+      if (tens > 1) {
+        read += defaultNumbers[tens] + " mươi ";
+        if (ones === 1) read += "mốt ";
+        else if (ones === 5) read += "lăm ";
+        else if (ones > 0) read += defaultNumbers[ones] + " ";
+      } else if (tens === 1) {
+        read += "mười ";
+        if (ones === 1) read += "một ";
+        else if (ones === 5) read += "lăm ";
+        else if (ones > 0) read += defaultNumbers[ones] + " ";
+      } else if (hundreds > 0 && ones > 0) {
+        read += "lẻ " + defaultNumbers[ones] + " ";
+      } else if (ones > 0) {
+        read += defaultNumbers[ones] + " ";
+      }
+      return read;
     }
+
+    let strNum = Math.round(number).toString();
+    let groups = [];
+    while (strNum.length > 0) {
+      let len = Math.min(3, strNum.length);
+      groups.push(parseInt(strNum.substring(strNum.length - len)));
+      strNum = strNum.substring(0, strNum.length - len);
+    }
+
+    let result = "";
+    for (let i = groups.length - 1; i >= 0; i--) {
+      if (groups[i] > 0) result += readGroup(groups[i]) + units[i] + " ";
+    }
+    result = result.trim();
+    if (result.length > 0) {
+      result = result.charAt(0).toUpperCase() + result.slice(1) + " đồng chẵn";
+    }
+    return result;
+  }
 </script>
 
 </body>
