@@ -454,36 +454,59 @@ function renderSingleDocPreview() {
     let totalText = docSoThanhChu(totalAmt);
     let totalContractAmount = a1.contractAmount + a2.contractAmount + a3.contractAmount + a4.contractAmount;
 
-    let docHTML = `
-        <div class="doc-quoc-hieu">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-        <div class="doc-tieu-ngu">Độc lập - Tự do - Hạnh phúc</div>
-        <div class="doc-title">BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG</div>
-        <span class="doc-subtitle">(Tháng &nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(monthOnly)}/2026)</span>
-
-        <p class="doc-p" style="text-indent: 40px;">Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;</p>
-        <p class="doc-p" style="text-indent: 40px;">Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.</p>
-        <p class="doc-p" style="text-indent: 40px;">Hôm nay, ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:</p>
+   let docHTML = `
+        <!-- Quốc hiệu - Tiêu ngữ -->
+        <div class="doc-quoc-hieu" style="text-align: center; font-weight: bold; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div class="doc-tieu-ngu" style="text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 15px;">Độc lập - Tự do - Hạnh phúc</div>
         
-        <p class="doc-indent-p"><strong>${escapeHtml(b1Upper)}</strong></p>
-        <p class="doc-indent-p">Địa chỉ: ${escapeHtml(b2)}</p>
-        <p class="doc-indent-p">Điện thoại: 02438515469</p>
-        <p class="doc-indent-p">Đại diện là Ông/ Bà: ${escapeHtml(b3)} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: ${escapeHtml(b4)}</p>
+        <!-- Tiêu đề văn bản -->
+        <div class="doc-title" style="text-align: center; font-weight: bold; text-transform: uppercase; font-size: 16px;">BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG</div>
+        <div class="doc-subtitle" style="text-align: center; font-weight: bold; margin-bottom: 15px;">(Tháng &nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(monthOnly)}/2026)</div>
 
-        <p class="doc-indent-p" style="margin-top: 10px;"><strong>Nhà thầu:</strong></p>
-        <p class="doc-indent-p">Tên nhà thầu: <strong>CÔNG TY CỔ PHẦN IN HÀ NỘI</strong></p>
-        <p class="doc-indent-p">Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội</p>
-        <p class="doc-indent-p">Điện thoại: 024. 39437063</p>
-        <p class="doc-indent-p">Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng</p>
-        <p class="doc-indent-p">Mã số thuế: 0101181842</p>
-        <p class="doc-indent-p">Đại diện là Bà: Nguyễn Thị Oanh</p>
-        <p class="doc-indent-p">Chức vụ: Tổng giám đốc</p>
+        <!-- Căn cứ & Thời gian (Thụt đầu dòng 1cm, căn đều 2 bên) -->
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 6px; line-height: 1.4;">
+            Căn cứ Hợp đồng kinh tế số &nbsp;&nbsp;&nbsp;&nbsp;/2026/HAN-CH ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026 giữa Thuế thành phố Hà Nội và Công ty Cổ phần In Hà Nội về việc thực hiện gói thầu: “Cung cấp nước uống đóng bình cho các Thuế cơ sở thuộc Thuế thành phố Hà Nội”;
+        </p>
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 6px; line-height: 1.4;">
+            Căn cứ thực tế bàn giao với ${escapeHtml(b1)} trong tháng.
+        </p>
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 12px; line-height: 1.4;">
+            Hôm nay, ngày &nbsp;&nbsp;&nbsp;&nbsp; tháng &nbsp;&nbsp;&nbsp;&nbsp; năm 2026, tại ${escapeHtml(b1)}, địa chỉ: ${escapeHtml(b2)}, chúng tôi gồm có:
+        </p>
+        
+        <!-- Thông tin BÊN A (Thụt lề lùi vào toàn khối 1cm) -->
+        <div style="padding-left: 1cm; margin-bottom: 12px; line-height: 1.4;">
+            <p style="margin: 0;"><strong>${escapeHtml(b1Upper)}</strong></p>
+            <p style="margin: 0;">Địa chỉ: ${escapeHtml(b2)}</p>
+            <p style="margin: 0;">Điện thoại: 02438515469</p>
+            <p style="margin: 0;">Đại diện là Ông/ Bà: ${escapeHtml(b3)} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: ${escapeHtml(b4)}</p>
+        </div>
 
-        <p class="doc-p" style="text-indent: 40px; margin-top: 15px;">Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:</p>
+        <!-- Thông tin BÊN B - Nhà thầu (Thụt lề lùi vào toàn khối 1cm) -->
+        <div style="padding-left: 1cm; margin-bottom: 15px; line-height: 1.4;">
+            <p style="margin: 0;"><strong>Nhà thầu:</strong></p>
+            <p style="margin: 0;">Tên nhà thầu: <strong>CÔNG TY CỔ PHẦN IN HÀ NỘI</strong></p>
+            <p style="margin: 0;">Địa chỉ: Lô 6B, CN5 Cụm Công nghiệp Ngọc Hồi, Xã Ngọc Hồi, TP Hà Nội</p>
+            <p style="margin: 0;">Điện thoại: 024. 39437063</p>
+            <p style="margin: 0;">Tài khoản: 69425969 Tại: Ngân hàng TMCP Á Châu – Chi nhánh Hoàng Cầu – Phòng giao dịch Huỳnh Thúc Kháng</p>
+            <p style="margin: 0;">Mã số thuế: 0101181842</p>
+            <p style="margin: 0;">Đại diện là Bà: Nguyễn Thị Oanh</p>
+            <p style="margin: 0;">Chức vụ: Tổng giám đốc</p>
+        </div>
 
-        <p class="doc-p" style="text-indent: 40px;"><strong>1. Nội dung nghiệm thu:</strong></p>
-        <p class="doc-p" style="text-indent: 40px;">Trong tháng &nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(monthOnly)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:</p>
+        <!-- Thống nhất bàn giao & Nội dung nghiệm thu -->
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-top: 15px; margin-bottom: 6px; line-height: 1.4;">
+            Hai bên cùng thống nhất nghiệm thu và bàn giao số lượng hàng hóa bên B cung cấp cho ${escapeHtml(b1)} như sau:
+        </p>
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 6px; line-height: 1.4;">
+            <strong>1. Nội dung nghiệm thu:</strong>
+        </p>
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 12px; line-height: 1.4;">
+            Trong tháng &nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(monthOnly)}/2026, nhà thầu đã bàn giao cho ${escapeHtml(b1)} đầy đủ số lượng, đúng chủng loại hàng hóa và đảm bảo chất lượng như yêu cầu cụ thể như sau:
+        </p>
 
-        <table class="doc-table">
+        <!-- Bảng số liệu -->
+        <table class="doc-table" style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
             <thead>
                 <tr>
                     <th style="width: 4%;">STT</th>
@@ -500,47 +523,47 @@ function renderSingleDocPreview() {
             </thead>
             <tbody>
                 <tr>
-                    <td>1</td>
+                    <td style="text-align: center;">1</td>
                     <td style="text-align: left;">${a2.name} (A2)</td>
-                    <td>${a2.unit}</td>
+                    <td style="text-align: center;">${a2.unit}</td>
                     <td style="text-align: right;">${formatNumber(a2.price)}</td>
-                    <td>${formatNumber(a2.contractQty)}</td>
+                    <td style="text-align: center;">${formatNumber(a2.contractQty)}</td>
                     <td style="text-align: right;">${formatCurrency(a2.contractAmount)}</td>
                     <td></td><td></td>
-                    <td>${formatNumber(item.qty2)}</td>
+                    <td style="text-align: center;">${formatNumber(item.qty2)}</td>
                     <td style="text-align: right;">${formatNumber(amt2)}</td>
                 </tr>
                 <tr>
-                    <td>2</td>
+                    <td style="text-align: center;">2</td>
                     <td style="text-align: left;">${a1.name} (A1)</td>
-                    <td>${a1.unit}</td>
+                    <td style="text-align: center;">${a1.unit}</td>
                     <td style="text-align: right;">${formatNumber(a1.price)}</td>
-                    <td>${formatNumber(a1.contractQty)}</td>
+                    <td style="text-align: center;">${formatNumber(a1.contractQty)}</td>
                     <td style="text-align: right;">${formatCurrency(a1.contractAmount)}</td>
                     <td></td><td></td>
-                    <td>${formatNumber(item.qty1)}</td>
+                    <td style="text-align: center;">${formatNumber(item.qty1)}</td>
                     <td style="text-align: right;">${formatNumber(amt1)}</td>
                 </tr>
                 <tr>
-                    <td>3</td>
+                    <td style="text-align: center;">3</td>
                     <td style="text-align: left;">${a3.name} (A3)</td>
-                    <td>${a3.unit}</td>
+                    <td style="text-align: center;">${a3.unit}</td>
                     <td style="text-align: right;">${formatNumber(a3.price)}</td>
-                    <td>${formatNumber(a3.contractQty)}</td>
+                    <td style="text-align: center;">${formatNumber(a3.contractQty)}</td>
                     <td style="text-align: right;">${formatCurrency(a3.contractAmount)}</td>
                     <td></td><td></td>
-                    <td>${formatNumber(item.qty3)}</td>
+                    <td style="text-align: center;">${formatNumber(item.qty3)}</td>
                     <td style="text-align: right;">${formatNumber(amt3)}</td>
                 </tr>
                 <tr>
-                    <td>4</td>
+                    <td style="text-align: center;">4</td>
                     <td style="text-align: left;">${a4.name} (A4)</td>
-                    <td>${a4.unit}</td>
+                    <td style="text-align: center;">${a4.unit}</td>
                     <td style="text-align: right;">${formatNumber(a4.price)}</td>
-                    <td>${formatNumber(a4.contractQty)}</td>
+                    <td style="text-align: center;">${formatNumber(a4.contractQty)}</td>
                     <td style="text-align: right;">${formatCurrency(a4.contractAmount)}</td>
                     <td></td><td></td>
-                    <td>${formatNumber(item.qty4)}</td>
+                    <td style="text-align: center;">${formatNumber(item.qty4)}</td>
                     <td style="text-align: right;">${formatNumber(amt4)}</td>
                 </tr>
                 <tr style="font-weight: bold;">
@@ -555,18 +578,26 @@ function renderSingleDocPreview() {
             </tbody>
         </table>
 
-        <p class="doc-p" style="text-indent: 40px;">Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.</p>
-        <p class="doc-p" style="text-indent: 40px;"><strong>2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</strong></p>
-        <p class="doc-p" style="text-indent: 40px;">Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.</p>
+        <!-- Các điều khoản kết luận -->
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 6px; line-height: 1.4;">
+            Toàn bộ hàng hóa mới 100%, đảm bảo quy cách, chất lượng, thông số kỹ thuật và được bàn giao cho Thuế cơ sở theo đúng địa điểm, thời gian được quy định trong hợp đồng.
+        </p>
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 6px; line-height: 1.4;">
+            <strong>2. Hai bên cùng thống nhất ký biên bản bàn giao nghiệm thu để xác nhận khối lượng công việc đã hoàn thành để làm cơ sở thanh toán.</strong>
+        </p>
+        <p class="doc-p" style="text-indent: 1cm; text-align: justify; margin-bottom: 20px; line-height: 1.4;">
+            Biên bản được lập thành 04 bản, Bên nhà thầu giữ 01 bản, Thuế cơ sở giữ 01 bản, Chủ đầu tư giữ 02 bản có giá trị pháp lý như nhau.
+        </p>
 
-        <table class="doc-signatures-table">
+        <!-- Khung chữ ký -->
+        <table class="doc-signatures-table" style="width: 100%; text-align: center; margin-top: 10px;">
             <tr>
-                <td>
+                <td style="width: 50%; vertical-align: top;">
                     <strong>ĐẠI DIỆN BÊN A</strong><br>
                     <strong>KT. TRƯỞNG THUẾ CƠ SỞ</strong><br>
                     <strong>PHÓ TRƯỞNG THUẾ CƠ SỞ</strong>
                 </td>
-                <td>
+                <td style="width: 50%; vertical-align: top;">
                     <strong>ĐẠI DIỆN BÊN B</strong><br>
                     <strong>TỔNG GIÁM ĐỐC</strong><br><br><br><br><br>
                     <strong>Nguyễn Thị Oanh</strong>
