@@ -101,9 +101,8 @@
 </div>
 
 <script>
-  // 🔴 THAY LINK WEB APP GOOGLE APPS SCRIPT CỦA THẦY VÀO ĐÂY
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxZrJlDKr5hk83EVk6DfCNdysNZbQo-77HhfjG34htHjL3ijZrm6v2frWrcg7yW7rM/exec";
-  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w/pub?output=csv";
+  // 🔴 DÁN URL WEB APP APPS SCRIPT CỦA THẦY VÀO ĐÂY (dùng chung cho cả đọc và xuất dữ liệu)
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx...THAY_URL_CUA_THAY.../exec";
 
   // Cấu hình danh mục mặt hàng & Đơn giá
   const productCatalog = [
@@ -123,14 +122,19 @@
   let currentUnitDataList = [];
 
   window.onload = function() {
-    loadDataFromGoogleSheets();
+    loadDataFromAppsScript();
   };
 
-  // 1. Fetch và Parse CSV từ Google Sheets API
-  async function loadDataFromGoogleSheets() {
+  // Đọc dữ liệu CSV từ Sheets thông qua Apps Script (doGet) để tránh lỗi CORS
+  async function loadDataFromAppsScript() {
     try {
-      const response = await fetch(SHEET_CSV_URL);
+      const response = await fetch(GAS_API_URL);
       const csvText = await response.text();
+
+      if (csvText.startsWith("Error:")) {
+        throw new Error(csvText);
+      }
+
       rawSheetData = parseCSV(csvText);
 
       // Lấy danh sách các đơn vị duy nhất (B1)
@@ -175,7 +179,7 @@
     return values;
   }
 
-  // 2. Lọc dữ liệu & Tính toán Lũy kế qua các tháng
+  // Lọc dữ liệu & Tính toán số lũy kế qua các tháng
   function applyFilter() {
     const selectedMonth = parseInt(document.getElementById('monthSelect').value);
     const selectedUnit = document.getElementById('unitSelect').value;
@@ -205,7 +209,7 @@
       };
     });
 
-    // Vẽ lại bảng preview màn hình chính
+    // Vẽ lại bảng preview trên giao diện chính
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = currentUnitDataList.map(item => `
       <tr>
@@ -220,11 +224,10 @@
     `).join('');
   }
 
-  // 3. Render Modal Preview xem trước Biên bản
+  // Xem trước biên bản (Modal)
   function openPreviewModal() {
     const selectedMonth = document.getElementById('monthSelect').value;
     const selectedUnit = document.getElementById('unitSelect').value;
-    const config = unitConfigMap[selectedUnit] || {};
     let tongTien = 0;
 
     let rowsHtml = currentUnitDataList.map((item, idx) => {
@@ -280,7 +283,7 @@
     return so.toLocaleString('vi-VN') + " đồng";
   }
 
-  // 4. Xuất File Word qua Google Apps Script API
+  // Xuất File Word qua Google Apps Script (doPost)
   async function exportWordReport() {
     const btnMain = document.getElementById('btnExport');
     const btnModal = document.getElementById('btnExportModal');
