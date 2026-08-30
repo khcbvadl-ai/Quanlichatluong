@@ -1,23 +1,389 @@
-const GAS_API_URL = "DÁN_URL_WEB_APP_APPS_SCRIPT_CỦA_THẦY_VÀO_ĐÂY";
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý & Tạo Báo Cáo Nghiệm Thu Nước</title>
+  <style>
+    :root {
+      --primary-color: #0066cc;
+      --bg-color: #f4f6f9;
+      --border-color: #ddd;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 25px;
+    }
+    .filter-section {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      background: #eef4fb;
+      padding: 15px;
+      border-radius: 6px;
+      align-items: center;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    select, input {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .action-bar {
+      margin-top: 25px;
+      text-align: right;
+    }
+    .btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background-color: #218838;
+    }
+    .btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      display: none;
+      font-style: italic;
+      color: #666;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
 
-  async function loadDataFromGoogleSheets() {
+<div class="container">
+  <h2>QUẢN LÝ & TẠO BÁO CÁO NGHIỆM THU NƯỚC</h2>
+
+  <div class="filter-section">
+    <div class="filter-group">
+      <label for="unitSelect">Chọn Đơn Vị (Tên đơn vị):</label>
+      <select id="unitSelect" onchange="applyFilter()"></select>
+    </div>
+    <div class="filter-group">
+      <label for="monthSelect">Chọn Tháng/Năm Đăng Ký:</label>
+      <select id="monthSelect" onchange="applyFilter()"></select>
+    </div>
+  </div>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>STT</th>
+        <th>Tên Loại Nước</th>
+        <th>ĐVT</th>
+        <th>Đơn Giá (VNĐ)</th>
+        <th>SL Lũy Kế</th>
+        <th>Thành Tiền Lũy Kế</th>
+        <th>SL Đợt Này</th>
+        <th>Thành Tiền Đợt Này</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dữ liệu sẽ được điền tự động bằng JavaScript -->
+    </tbody>
+  </table>
+
+  <div class="action-bar">
+    <button class="btn" id="exportBtn" onclick="generateWordDoc()">Xuất Biên Bản Nghiệm Thu (.docx)</button>
+    <div class="loading" id="loadingText">Đang khởi tạo và xuất file, vui lòng đợi...</div>
+  </div>
+</div>
+
+<script>
+  // DÁN ĐƯỜNG DẪN WEB APP APPS SCRIPT CỦA THẦY VÀO BIẾN DƯỚI ĐÂY
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzg3ucYox3ECYvtyfgPhYrQuypj_bAE3bJdFP56jrNkmfyT3kZsZ-j6bPAJMOYLalX8/exec"; 
+
+  // Bảng giá cố định các loại nước
+  const PRODUCT_PRICE_MAP = {
+    'b1': 25000, // Số lượng loại 1 (bình 18,5 lít)
+    'b2': 25000, // Số lượng loại 2 (bình 19 lít)
+    'b3': 80000, // Số lượng loại 3 (chai 0,35 lít)
+    'b4': 90000  // Số lượng loại 4 (chai 0,5 lít)
+  };
+
+  const PRODUCT_NAME_MAP = {
+    'b1': 'Nước bình 18,5 lít',
+    'b2': 'Nước bình 19 lít',
+    'b3': 'Nước chai 0,35 lít',
+    'b4': 'Nước chai 0,5 lít'
+  };
+
+  let rawSheetData = [];
+
+  // Hàm chuyển đổi dữ liệu CSV nhận từ Apps Script thành Array
+  function parseCSV(text) {
+    let lines = text.split('\n');
+    let result = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      cols = cols.map(c => c.replace(/^"|"$/g, '').trim());
+      
+      if (cols.length >= 7) {
+        result.push({
+          timestamp: cols[0],
+          donVi: cols[1],
+          thangNam: cols[2],
+          b1: parseInt(cols[3]) || 0,
+          b2: parseInt(cols[4]) || 0,
+          b3: parseInt(cols[5]) || 0,
+          b4: parseInt(cols[6]) || 0
+        });
+      }
+    }
+    return result;
+  }
+
+  // Tải dữ liệu qua Apps Script (Khắc phục hoàn toàn lỗi CORS và Publish to web)
+  async function loadData() {
     try {
-      // Gọi qua Apps Script thay vì gọi trực tiếp tới Google Sheets
       const response = await fetch(GAS_API_URL);
       const csvText = await response.text();
 
       if (csvText.startsWith("Error:")) {
-        throw new Error(csvText);
+        alert("Lỗi kết nối từ Apps Script: " + csvText);
+        return;
       }
 
       rawSheetData = parseCSV(csvText);
 
-      const units = [...new Set(rawSheetData.map(r => r.b1).filter(Boolean))];
+      // Điền danh sách Đơn Vị
+      const units = [...new Set(rawSheetData.map(r => r.donVi))].filter(Boolean);
       const unitSelect = document.getElementById('unitSelect');
       unitSelect.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
 
+      // Điền danh sách Tháng/Năm
+      const months = [...new Set(rawSheetData.map(r => r.thangNam))].filter(Boolean);
+      const monthSelect = document.getElementById('monthSelect');
+      monthSelect.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+
       applyFilter();
     } catch (err) {
-      alert("Lỗi tải dữ liệu: " + err.message);
+      alert("Không thể tải dữ liệu: " + err.message);
     }
   }
+
+  function applyFilter() {
+    const selectedUnit = document.getElementById('unitSelect').value;
+    const selectedMonth = document.getElementById('monthSelect').value;
+
+    const filtered = rawSheetData.filter(r => r.donVi === selectedUnit && r.thangNam === selectedMonth);
+
+    // Tính tổng số lượng đợt này
+    let totals = { b1: 0, b2: 0, b3: 0, b4: 0 };
+    filtered.forEach(r => {
+      totals.b1 += r.b1;
+      totals.b2 += r.b2;
+      totals.b3 += r.b3;
+      totals.b4 += r.b4;
+    });
+
+    const tbody = document.querySelector('#dataTable tbody');
+    tbody.innerHTML = '';
+
+    const keys = ['b1', 'b2', 'b3', 'b4'];
+    let stt = 1;
+    keys.forEach(key => {
+      if (totals[key] > 0) {
+        const donGia = PRODUCT_PRICE_MAP[key];
+        const slDotNay = totals[key];
+        const tienDotNay = slDotNay * donGia;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${stt++}</td>
+          <td>${PRODUCT_NAME_MAP[key]}</td>
+          <td>${key === 'b1' || key === 'b2' ? 'Bình' : 'Thùng'}</td>
+          <td>${donGia.toLocaleString('vi-VN')}</td>
+          <td>${slDotNay}</td>
+          <td>${tienDotNay.toLocaleString('vi-VN')}</td>
+          <td>${slDotNay}</td>
+          <td>${tienDotNay.toLocaleString('vi-VN')}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+  }
+
+  // Chuyển đổi số thành chữ tiếng Việt
+  function numberToWords(num) {
+    if (num === 0) return "Không đồng";
+    const defaultNumbers = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+    const units = ["", "nghìn", "triệu", "tỷ"];
+    
+    function readGroup(group) {
+      let read = "";
+      let hundred = Math.floor(group / 100);
+      let ten = Math.floor((group % 100) / 10);
+      let unit = group % 10;
+      
+      if (hundred > 0 || group >= 100) {
+        read += defaultNumbers[hundred] + " trăm ";
+      }
+      if (ten > 1) {
+        read += defaultNumbers[ten] + " mươi ";
+        if (unit === 1) read += "mốt ";
+        else if (unit === 5) read += "lăm ";
+        else if (unit > 0) read += defaultNumbers[unit] + " ";
+      } else if (ten === 1) {
+        read += "mười ";
+        if (unit === 1) read += "một ";
+        else if (unit === 5) read += "lăm ";
+        else if (unit > 0) read += defaultNumbers[unit] + " ";
+      } else if (ten === 0 && unit > 0) {
+        if (hundred > 0) read += "lẻ ";
+        read += defaultNumbers[unit] + " ";
+      }
+      return read;
+    }
+
+    let strNum = Math.floor(num).toString();
+    let groups = [];
+    while (strNum.length > 0) {
+      groups.push(parseInt(strNum.slice(-3)));
+      strNum = strNum.slice(0, -3);
+    }
+
+    let result = "";
+    for (let i = groups.length - 1; i >= 0; i--) {
+      if (groups[i] > 0) {
+        result += readGroup(groups[i]) + units[i] + " ";
+      }
+    }
+    result = result.trim() + " đồng";
+    return result.charAt(0).toUpperCase() + result.slice(1);
+  }
+
+  // Gửi thông tin sang Apps Script để tạo file Word và tải về
+  async function generateWordDoc() {
+    const unitSelect = document.getElementById('unitSelect').value;
+    const monthSelect = document.getElementById('monthSelect').value;
+    
+    const exportBtn = document.getElementById('exportBtn');
+    const loadingText = document.getElementById('loadingText');
+
+    exportBtn.disabled = true;
+    loadingText.style.display = 'block';
+
+    const rows = document.querySelectorAll('#dataTable tbody tr');
+    let items = [];
+    let tongTien = 0;
+
+    rows.forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      const tienDotNay = parseInt(tds[7].innerText.replace(/\./g, '')) || 0;
+      tongTien += tienDotNay;
+
+      items.push({
+        tenHang: tds[1].innerText,
+        dvt: tds[2].innerText,
+        donGia: tds[3].innerText,
+        slLuyKe: tds[4].innerText,
+        tienLuyKe: tds[5].innerText,
+        slDotNay: tds[6].innerText,
+        tienDotNay: tds[7].innerText
+      });
+    });
+
+    const monthParts = monthSelect.split('/');
+    const payload = {
+      b1: unitSelect,
+      thang: monthParts[0] || '',
+      nam: monthParts[1] || '2026',
+      tongTienDotNay: tongTien.toLocaleString('vi-VN'),
+      tongTienBangChu: numberToWords(tongTien),
+      items: items
+    };
+
+    try {
+      const response = await fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        const byteCharacters = atob(result.base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = result.fileName;
+        link.click();
+      } else {
+        alert("Lỗi xuất file: " + result.message);
+      }
+    } catch (err) {
+      alert("Lỗi hệ thống: " + err.message);
+    } finally {
+      exportBtn.disabled = false;
+      loadingText.style.display = 'none';
+    }
+  }
+
+  // Khởi chạy tải dữ liệu ngay khi mở trang
+  window.onload = loadData;
+</script>
+
+</body>
+</html>
