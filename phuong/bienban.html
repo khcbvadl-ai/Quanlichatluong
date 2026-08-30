@@ -1,388 +1,274 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quản Lý & Tạo Báo Cáo Nghiệm Thu Nước</title>
-  <style>
-    :root {
-      --primary-color: #0066cc;
-      --bg-color: #f4f6f9;
-      --border-color: #ddd;
-    }
-    body {
-      font-family: Arial, sans-serif;
-      background-color: var(--bg-color);
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      color: var(--primary-color);
-      margin-bottom: 25px;
-    }
-    .filter-section {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-      background: #eef4fb;
-      padding: 15px;
-      border-radius: 6px;
-      align-items: center;
-    }
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-    label {
-      font-weight: bold;
-      margin-bottom: 5px;
-      font-size: 14px;
-    }
-    select, input {
-      padding: 8px 12px;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid var(--border-color);
-      padding: 10px;
-      text-align: center;
-      font-size: 14px;
-    }
-    th {
-      background-color: var(--primary-color);
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    .action-bar {
-      margin-top: 25px;
-      text-align: right;
-    }
-    .btn {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .btn:hover {
-      background-color: #218838;
-    }
-    .btn:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-    }
-    .loading {
-      display: none;
-      font-style: italic;
-      color: #666;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý & Báo cáo Nước uống</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #1e5631; margin-top: 0; text-align: center; }
+        .filter-box { display: flex; gap: 15px; background: #eef5f0; padding: 15px; border-radius: 6px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+        label { font-weight: bold; color: #2d572c; }
+        select, button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        button { background-color: #1e5631; color: white; border: none; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        button:hover { background-color: #143d21; }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+        .main-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .main-table th, .main-table td { border: 1px solid #dddddd; padding: 10px; text-align: center; font-size: 13px; }
+        .main-table th { background-color: #2e7d32; color: white; }
+        .main-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .text-right { text-align: right !important; }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; color: white; font-size: 18px; }
+    </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>QUẢN LÝ & TẠO BÁO CÁO NGHIỆM THU NƯỚC</h2>
-
-  <div class="filter-section">
-    <div class="filter-group">
-      <label for="unitSelect">Chọn Đơn Vị (Tên đơn vị):</label>
-      <select id="unitSelect" onchange="applyFilter()"></select>
+    <h2>HỆ THỐNG THỐNG KÊ & XUẤT BÁO CÁO NƯỚC UỐNG</h2>
+    
+    <div class="filter-box">
+        <div>
+            <label for="unit-filter">Đơn vị (Thuế cơ sở):</label>
+            <select id="unit-filter"><option value="">-- Tất cả đơn vị --</option></select>
+        </div>
+        <div>
+            <label for="month-filter">Tháng:</label>
+            <select id="month-filter"><option value="">-- Tất cả tháng --</option></select>
+        </div>
+        <button id="btn-export-doc" disabled onclick="generateDocReport()">Tạo báo cáo (.docx)</button>
     </div>
-    <div class="filter-group">
-      <label for="monthSelect">Chọn Tháng/Năm Đăng Ký:</label>
-      <select id="monthSelect" onchange="applyFilter()"></select>
-    </div>
-  </div>
 
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>STT</th>
-        <th>Tên Loại Nước</th>
-        <th>ĐVT</th>
-        <th>Đơn Giá (VNĐ)</th>
-        <th>SL Lũy Kế</th>
-        <th>Thành Tiền Lũy Kế</th>
-        <th>SL Đợt Này</th>
-        <th>Thành Tiền Đợt Này</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Dữ liệu sẽ được điền tự động bằng JavaScript -->
-    </tbody>
-  </table>
-
-  <div class="action-bar">
-    <button class="btn" id="exportBtn" onclick="generateWordDoc()">Xuất Biên Bản Nghiệm Thu (.docx)</button>
-    <div class="loading" id="loadingText">Đang khởi tạo và xuất file, vui lòng đợi...</div>
-  </div>
+    <table class="main-table">
+        <thead>
+            <tr>
+                <th rowspan="2">STT</th>
+                <th rowspan="2">Đơn vị</th>
+                <th rowspan="2">Tháng</th>
+                <th colspan="4">Số lượng đặt</th>
+                <th rowspan="2">Tổng thành tiền (VNĐ)</th>
+            </tr>
+            <tr>
+                <th>A1 (18.5L)</th>
+                <th>A2 (19L)</th>
+                <th>A3 (0.35L)</th>
+                <th>A4 (0.5L)</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <tr><td colspan="8">Đang tải dữ liệu từ Google Sheets...</td></tr>
+        </tbody>
+        <tfoot id="table-foot"></tfoot>
+    </table>
 </div>
 
+<div id="loading" class="loading-overlay">Đang kết nối API và tạo file Word, vui lòng đợi...</div>
+
 <script>
-  // DÁN ĐƯỜNG DẪN WEB APP APPS SCRIPT CỦA THẦY VÀO BIẾN DƯỚI ĐÂY
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzg3ucYox3ECYvtyfgPhYrQuypj_bAE3bJdFP56jrNkmfyT3kZsZ-j6bPAJMOYLalX8/exec"; 
-
-  // Bảng giá cố định các loại nước
-  const PRODUCT_PRICE_MAP = {
-    'b1': 25000, // Số lượng loại 1 (bình 18,5 lít)
-    'b2': 25000, // Số lượng loại 2 (bình 19 lít)
-    'b3': 80000, // Số lượng loại 3 (chai 0,35 lít)
-    'b4': 90000  // Số lượng loại 4 (chai 0,5 lít)
-  };
-
-  const PRODUCT_NAME_MAP = {
-    'b1': 'Nước bình 18,5 lít',
-    'b2': 'Nước bình 19 lít',
-    'b3': 'Nước chai 0,35 lít',
-    'b4': 'Nước chai 0,5 lít'
-  };
-
-  let rawSheetData = [];
-
-  // Hàm chuyển đổi dữ liệu CSV nhận từ Apps Script thành Array
-  function parseCSV(text) {
-    let lines = text.split('\n');
-    let result = [];
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-      cols = cols.map(c => c.replace(/^"|"$/g, '').trim());
-      
-      if (cols.length >= 7) {
-        result.push({
-          timestamp: cols[0],
-          donVi: cols[1],
-          thangNam: cols[2],
-          b1: parseInt(cols[3]) || 0,
-          b2: parseInt(cols[4]) || 0,
-          b3: parseInt(cols[5]) || 0,
-          b4: parseInt(cols[6]) || 0
-        });
-      }
-    }
-    return result;
-  }
-
-  // Tải dữ liệu qua Apps Script (Khắc phục hoàn toàn lỗi CORS và Publish to web)
-  async function loadData() {
-    try {
-      const response = await fetch(GAS_API_URL);
-      const csvText = await response.text();
-
-      if (csvText.startsWith("Error:")) {
-        alert("Lỗi kết nối từ Apps Script: " + csvText);
-        return;
-      }
-
-      rawSheetData = parseCSV(csvText);
-
-      // Điền danh sách Đơn Vị
-      const units = [...new Set(rawSheetData.map(r => r.donVi))].filter(Boolean);
-      const unitSelect = document.getElementById('unitSelect');
-      unitSelect.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
-
-      // Điền danh sách Tháng/Năm
-      const months = [...new Set(rawSheetData.map(r => r.thangNam))].filter(Boolean);
-      const monthSelect = document.getElementById('monthSelect');
-      monthSelect.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
-
-      applyFilter();
-    } catch (err) {
-      alert("Không thể tải dữ liệu: " + err.message);
-    }
-  }
-
-  function applyFilter() {
-    const selectedUnit = document.getElementById('unitSelect').value;
-    const selectedMonth = document.getElementById('monthSelect').value;
-
-    const filtered = rawSheetData.filter(r => r.donVi === selectedUnit && r.thangNam === selectedMonth);
-
-    // Tính tổng số lượng đợt này
-    let totals = { b1: 0, b2: 0, b3: 0, b4: 0 };
-    filtered.forEach(r => {
-      totals.b1 += r.b1;
-      totals.b2 += r.b2;
-      totals.b3 += r.b3;
-      totals.b4 += r.b4;
-    });
-
-    const tbody = document.querySelector('#dataTable tbody');
-    tbody.innerHTML = '';
-
-    const keys = ['b1', 'b2', 'b3', 'b4'];
-    let stt = 1;
-    keys.forEach(key => {
-      if (totals[key] > 0) {
-        const donGia = PRODUCT_PRICE_MAP[key];
-        const slDotNay = totals[key];
-        const tienDotNay = slDotNay * donGia;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${stt++}</td>
-          <td>${PRODUCT_NAME_MAP[key]}</td>
-          <td>${key === 'b1' || key === 'b2' ? 'Bình' : 'Thùng'}</td>
-          <td>${donGia.toLocaleString('vi-VN')}</td>
-          <td>${slDotNay}</td>
-          <td>${tienDotNay.toLocaleString('vi-VN')}</td>
-          <td>${slDotNay}</td>
-          <td>${tienDotNay.toLocaleString('vi-VN')}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-    });
-  }
-
-  // Chuyển đổi số thành chữ tiếng Việt
-  function numberToWords(num) {
-    if (num === 0) return "Không đồng";
-    const defaultNumbers = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
-    const units = ["", "nghìn", "triệu", "tỷ"];
+    // Dán URL Web App Google Apps Script của thầy vào đây
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec";
     
-    function readGroup(group) {
-      let read = "";
-      let hundred = Math.floor(group / 100);
-      let ten = Math.floor((group % 100) / 10);
-      let unit = group % 10;
-      
-      if (hundred > 0 || group >= 100) {
-        read += defaultNumbers[hundred] + " trăm ";
-      }
-      if (ten > 1) {
-        read += defaultNumbers[ten] + " mươi ";
-        if (unit === 1) read += "mốt ";
-        else if (unit === 5) read += "lăm ";
-        else if (unit > 0) read += defaultNumbers[unit] + " ";
-      } else if (ten === 1) {
-        read += "mười ";
-        if (unit === 1) read += "một ";
-        else if (unit === 5) read += "lăm ";
-        else if (unit > 0) read += defaultNumbers[unit] + " ";
-      } else if (ten === 0 && unit > 0) {
-        if (hundred > 0) read += "lẻ ";
-        read += defaultNumbers[unit] + " ";
-      }
-      return read;
-    }
-
-    let strNum = Math.floor(num).toString();
-    let groups = [];
-    while (strNum.length > 0) {
-      groups.push(parseInt(strNum.slice(-3)));
-      strNum = strNum.slice(0, -3);
-    }
-
-    let result = "";
-    for (let i = groups.length - 1; i >= 0; i--) {
-      if (groups[i] > 0) {
-        result += readGroup(groups[i]) + units[i] + " ";
-      }
-    }
-    result = result.trim() + " đồng";
-    return result.charAt(0).toUpperCase() + result.slice(1);
-  }
-
-  // Gửi thông tin sang Apps Script để tạo file Word và tải về
-  async function generateWordDoc() {
-    const unitSelect = document.getElementById('unitSelect').value;
-    const monthSelect = document.getElementById('monthSelect').value;
-    
-    const exportBtn = document.getElementById('exportBtn');
-    const loadingText = document.getElementById('loadingText');
-
-    exportBtn.disabled = true;
-    loadingText.style.display = 'block';
-
-    const rows = document.querySelectorAll('#dataTable tbody tr');
-    let items = [];
-    let tongTien = 0;
-
-    rows.forEach(tr => {
-      const tds = tr.querySelectorAll('td');
-      const tienDotNay = parseInt(tds[7].innerText.replace(/\./g, '')) || 0;
-      tongTien += tienDotNay;
-
-      items.push({
-        tenHang: tds[1].innerText,
-        dvt: tds[2].innerText,
-        donGia: tds[3].innerText,
-        slLuyKe: tds[4].innerText,
-        tienLuyKe: tds[5].innerText,
-        slDotNay: tds[6].innerText,
-        tienDotNay: tds[7].innerText
-      });
-    });
-
-    const monthParts = monthSelect.split('/');
-    const payload = {
-      b1: unitSelect,
-      thang: monthParts[0] || '',
-      nam: monthParts[1] || '2026',
-      tongTienDotNay: tongTien.toLocaleString('vi-VN'),
-      tongTienBangChu: numberToWords(tongTien),
-      items: items
+    const SHEET_ID = '1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w';
+    let rawData = [];
+    let prices = { A1: 0, A2: 0, A3: 0, A4: 0 };
+    let productNames = {
+        A1: 'Nước khoáng vòi 18.5L',
+        A2: 'Nước khoáng úp 19L',
+        A3: 'Nước khoáng chai 0.35L',
+        A4: 'Nước khoáng chai 0.5L'
     };
 
-    try {
-      const response = await fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
+    window.onload = async function() {
+        await loadGeneralInfo();
+        await loadQuantityData();
+    };
 
-      const result = await response.json();
-      if (result.status === 'success') {
-        const byteCharacters = atob(result.base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = result.fileName;
-        link.click();
-      } else {
-        alert("Lỗi xuất file: " + result.message);
-      }
-    } catch (err) {
-      alert("Lỗi hệ thống: " + err.message);
-    } finally {
-      exportBtn.disabled = false;
-      loadingText.style.display = 'none';
+    async function loadGeneralInfo() {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Thong_tin_chung`;
+        try {
+            const response = await fetch(url);
+            const text = await response.text();
+            const rows = text.split('\n').map(r => r.split(','));
+            // Lấy đơn giá mẫu cho A1, A2, A3, A4 (Tùy theo dòng trong sheet của thầy)
+            prices.A1 = parseFloat(rows[1]?.[5]?.replace(/[^0-9.]/g, '')) || 45000;
+            prices.A2 = parseFloat(rows[2]?.[5]?.replace(/[^0-9.]/g, '')) || 45000;
+            prices.A3 = parseFloat(rows[3]?.[5]?.replace(/[^0-9.]/g, '')) || 80000;
+            prices.A4 = parseFloat(rows[4]?.[5]?.replace(/[^0-9.]/g, '')) || 90000;
+        } catch(e) { console.error("Lỗi đọc Thong_tin_chung:", e); }
     }
-  }
 
-  // Khởi chạy tải dữ liệu ngay khi mở trang
-  window.onload = loadData;
+    async function loadQuantityData() {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=So_luong_dat`;
+        try {
+            const response = await fetch(url);
+            const text = await response.text();
+            const lines = text.split('\n');
+            rawData = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+                if(cols.length >= 6) {
+                    const a1 = parseInt(cols[2]) || 0;
+                    const a2 = parseInt(cols[3]) || 0;
+                    const a3 = parseInt(cols[4]) || 0;
+                    const a4 = parseInt(cols[5]) || 0;
+                    const total = (a1*prices.A1) + (a2*prices.A2) + (a3*prices.A3) + (a4*prices.A4);
+
+                    rawData.push({
+                        unit: cols[0],
+                        month: cols[1],
+                        a1: a1, a2: a2, a3: a3, a4: a4,
+                        totalAmount: total,
+                        b2: cols[6] || '', // Địa chỉ
+                        b3: cols[7] || '', // Đại diện
+                        b4: cols[8] || ''  // Chức vụ
+                    });
+                }
+            }
+            populateFilters();
+            renderTable(rawData);
+        } catch(e) { console.error("Lỗi đọc So_luong_dat:", e); }
+    }
+
+    function populateFilters() {
+        const units = [...new Set(rawData.map(d => d.unit))];
+        const months = [...new Set(rawData.map(d => d.month))];
+
+        const uSel = document.getElementById('unit-filter');
+        const mSel = document.getElementById('month-filter');
+
+        units.forEach(u => uSel.innerHTML += `<option value="${u}">${u}</option>`);
+        months.forEach(m => mSel.innerHTML += `<option value="${m}">${m}</option>`);
+
+        uSel.onchange = applyFilter;
+        mSel.onchange = applyFilter;
+    }
+
+    function applyFilter() {
+        const uVal = document.getElementById('unit-filter').value;
+        const mVal = document.getElementById('month-filter').value;
+
+        const filtered = rawData.filter(d => {
+            return (!uVal || d.unit === uVal) && (!mVal || d.month === mVal);
+        });
+
+        document.getElementById('btn-export-doc').disabled = !(uVal && mVal);
+        renderTable(filtered);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+
+        let sumA1 = 0, sumA2 = 0, sumA3 = 0, sumA4 = 0, sumTotal = 0;
+
+        data.forEach((d, idx) => {
+            sumA1 += d.a1; sumA2 += d.a2; sumA3 += d.a3; sumA4 += d.a4;
+            sumTotal += d.totalAmount;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${d.unit}</td>
+                    <td>${d.month}</td>
+                    <td>${d.a1}</td>
+                    <td>${d.a2}</td>
+                    <td>${d.a3}</td>
+                    <td>${d.a4}</td>
+                    <td class="text-right">${d.totalAmount.toLocaleString('vi-VN')}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('table-foot').innerHTML = `
+            <tr style="font-weight:bold; background:#e8f5e9;">
+                <td colspan="3">TỔNG CỘNG</td>
+                <td>${sumA1}</td>
+                <td>${sumA2}</td>
+                <td>${sumA3}</td>
+                <td>${sumA4}</td>
+                <td class="text-right">${sumTotal.toLocaleString('vi-VN')} VNĐ</td>
+            </tr>
+        `;
+    }
+
+    // Chuyển số thành chữ
+    function docSoThanhChu(so) {
+        if (so === 0) return "Không đồng";
+        const chuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+        function docNhomBaSo(n) {
+            let tr = Math.floor(n / 100), ch = Math.floor((n % 100) / 10), dv = n % 10, s = "";
+            if (tr > 0 || ch > 0 || dv > 0) {
+                s += chuSo[tr] + " trăm ";
+                if (ch === 0 && dv > 0) s += "lẻ ";
+                if (ch === 1) s += "mười ";
+                if (ch > 1) s += chuSo[ch] + " mươi ";
+                if (dv === 1 && ch > 1) s += "mốt";
+                else if (dv === 5 && ch > 0) s += "lăm";
+                else if (dv > 0) s += chuSo[dv];
+            }
+            return s.trim();
+        }
+        let str = "", ty = Math.floor(so / 1e9), trieu = Math.floor((so % 1e9) / 1e6), nghin = Math.floor((so % 1e6) / 1000), dong = so % 1000;
+        if (ty > 0) str += docNhomBaSo(ty) + " tỷ ";
+        if (trieu > 0) str += docNhomBaSo(trieu) + " triệu ";
+        if (nghin > 0) str += docNhomBaSo(nghin) + " nghìn ";
+        if (dong > 0) str += docNhomBaSo(dong);
+        str = str.trim() + " đồng chẵn.";
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    async function generateDocReport() {
+        const uVal = document.getElementById('unit-filter').value;
+        const mVal = document.getElementById('month-filter').value;
+
+        const record = rawData.find(d => d.unit === uVal && d.month === mVal);
+        if (!record) return alert("Không tìm thấy dữ liệu phù hợp!");
+
+        document.getElementById('loading').style.display = 'flex';
+
+        const items = [];
+        if (record.a1 > 0) items.push({ name: productNames.A1, unit: 'Bình 18.5L', quantity: record.a1, price: prices.A1, amount: record.a1 * prices.A1 });
+        if (record.a2 > 0) items.push({ name: productNames.A2, unit: 'Bình 19L', quantity: record.a2, price: prices.A2, amount: record.a2 * prices.A2 });
+        if (record.a3 > 0) items.push({ name: productNames.A3, unit: 'Thùng 0.35L', quantity: record.a3, price: prices.A3, amount: record.a3 * prices.A3 });
+        if (record.a4 > 0) items.push({ name: productNames.A4, unit: 'Thùng 0.5L', quantity: record.a4, price: prices.A4, amount: record.a4 * prices.A4 });
+
+        const payload = {
+            unit: record.unit,
+            month: record.month,
+            b2: record.b2,
+            b3: record.b3,
+            b4: record.b4,
+            totalAmountStr: record.totalAmount.toLocaleString('vi-VN'),
+            totalInWords: docSoThanhChu(record.totalAmount),
+            items: items
+        };
+
+        try {
+            const response = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result.status === 'success') {
+                // Tải file Word về máy
+                const link = document.createElement('a');
+                link.href = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,' + result.base64;
+                link.download = result.filename;
+                link.click();
+            } else {
+                alert("Lỗi tạo báo cáo: " + result.message);
+            }
+        } catch (e) {
+            alert("Lỗi khi gọi API: " + e.message);
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
 </script>
 
 </body>
