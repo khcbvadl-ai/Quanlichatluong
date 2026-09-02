@@ -87,8 +87,7 @@
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
-      <tfoot>
-        <tr class="total-row" id="tableFooter"></tr>
+      <tfoot id="tableFooter">
       </tfoot>
     </table>
   </div>
@@ -100,6 +99,8 @@
   const URL_SO_LUONG = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=So_luong_dat`;
 
   let prices = [74600, 81300, 72500, 90500];
+  let slHopDong = [0, 0, 0, 0];
+  
   let productNames = [
     "Nước uống đóng bình/chai Loại 1 (18.5L)",
     "Nước uống đóng bình/chai Loại 2 (19L)",
@@ -131,6 +132,7 @@
       populateFilters();
       filterData();
     } catch (err) {
+      console.log("Lỗi tải dữ liệu, chuyển sang Mock Data:", err);
       loadMockData();
     } finally {
       showLoading(false);
@@ -142,13 +144,29 @@
       const json = JSON.parse(text.substring(47, text.length - 2));
       const rows = json.table.rows;
       if (rows && rows.length > 0) {
-        for (let i = 0; i < 4; i++) {
-          if (rows[i] && rows[i].c && rows[i].c[1] && rows[i].c[1].v) {
-            prices[i] = parseFloat(rows[i].c[1].v) || prices[i];
+        for (let r = 0; r < rows.length; r++) {
+          if (rows[r] && rows[r].c && rows[r].c[1] && rows[r].c[1].v) {
+            let ma = String(rows[r].c[1].v).trim();
+            let idx = ['A1', 'A2', 'A3', 'A4'].indexOf(ma);
+            
+            if (idx !== -1) {
+              if (rows[r].c[5] && rows[r].c[5].v) {
+                let price = parseFloat(rows[r].c[5].v);
+                if (price < 1000) price *= 1000;
+                prices[idx] = price;
+              }
+              if (rows[r].c[4] && rows[r].c[4].v) {
+                 let val = parseFloat(rows[r].c[4].v);
+                 if (val < 10000 && val % 1 !== 0) val = val * 1000; 
+                 slHopDong[idx] = Math.round(val);
+              }
+            }
           }
         }
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log("Lỗi đọc sheet Thông tin chung:", e);
+    }
   }
 
   function parseOrdersJson(text) {
@@ -180,6 +198,7 @@
   }
 
   function loadMockData() {
+    slHopDong = [14375, 4617, 990, 1767];
     rawData = [
       { id: 1, donVi: "Thuế 1", thang: "8/2026", q: [12, 20, 30, 0], b2: "Số 10 Nguyễn Trãi, Thanh Xuân, Hà Nội", b3: "Nguyễn Văn A", b4: "Trưởng Thuế cơ sở" },
       { id: 2, donVi: "Thuế 2", thang: "8/2026", q: [200, 3, 15, 20], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở" },
@@ -274,21 +293,31 @@
 
     const tfoot = document.getElementById('tableFooter');
     tfoot.innerHTML = `
-      <td colspan="3" class="text-center">TỔNG CỘNG ĐĂNG KÝ</td>
-      <td>${sumQ[0]}</td>
-      <td>${sumQ[1]}</td>
-      <td>${sumQ[2]}</td>
-      <td>${sumQ[3]}</td>
-      <td class="text-right">${formatNum(sumMoney[0])}</td>
-      <td class="text-right">${formatNum(sumMoney[1])}</td>
-      <td class="text-right">${formatNum(sumMoney[2])}</td>
-      <td class="text-right">${formatNum(sumMoney[3])}</td>
-      <td class="text-right" style="color:#1b5e20;">${formatNum(totalGrand)}</td>
+      <tr class="total-row">
+        <td colspan="3" class="text-center">TỔNG CỘNG ĐĂNG KÝ</td>
+        <td>${sumQ[0]}</td>
+        <td>${sumQ[1]}</td>
+        <td>${sumQ[2]}</td>
+        <td>${sumQ[3]}</td>
+        <td class="text-right">${formatNum(sumMoney[0])}</td>
+        <td class="text-right">${formatNum(sumMoney[1])}</td>
+        <td class="text-right">${formatNum(sumMoney[2])}</td>
+        <td class="text-right">${formatNum(sumMoney[3])}</td>
+        <td class="text-right" style="color:#1b5e20;">${formatNum(totalGrand)}</td>
+      </tr>
+      <tr class="total-row" style="background-color: #fbe9e7; color: #d84315;">
+        <td colspan="3" class="text-center">SỐ LIỆU THEO HỢP ĐỒNG</td>
+        <td>${formatNum(slHopDong[0])}</td>
+        <td>${formatNum(slHopDong[1])}</td>
+        <td>${formatNum(slHopDong[2])}</td>
+        <td>${formatNum(slHopDong[3])}</td>
+        <td colspan="5" class="text-center">-</td>
+      </tr>
     `;
   }
 
   function formatNum(num) {
-    if (!num) return '0';
+    if (!num && num !== 0) return '0';
     return num.toLocaleString('vi-VN');
   }
 
