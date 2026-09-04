@@ -2,193 +2,175 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bảng Thống Kê Đăng Ký Nước</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
     <style>
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
         }
 
         body {
-            background-color: #f4f6f8;
+            font-family: Arial, sans-serif;
+            margin: 0;
             padding: 10px;
-            color: #333;
+            background-color: #f8f9fa;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-
-        .title {
-            text-align: center;
-            color: #1b4332;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
-
-        /* Filter Panel */
-        .filter-box {
-            background-color: #eaf2ed;
+            background: #fff;
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+        h2 {
+            text-align: center;
+            color: #1b4d2e;
+            margin-bottom: 20px;
+            font-size: 20px;
         }
 
-        .filter-group label {
-            font-weight: bold;
-            color: #1b4332;
-            font-size: 13px;
-        }
-
-        .filter-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
+        /* Khối bộ lọc giữ nguyên kiểu dáng cũ & tối ưu kích thước trên di động */
+        .filter-panel {
+            background-color: #eaf2eb;
+            padding: 15px;
             border-radius: 6px;
-            background-color: #fff;
-            font-size: 14px;
-            outline: none;
+            margin-bottom: 20px;
         }
 
-        /* Button Group */
+        .filter-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-weight: bold;
+            color: #1b4d2e;
+            width: 80px;
+            font-size: 14px;
+        }
+
+        .filter-control {
+            flex: 1;
+            min-width: 200px;
+            max-width: 100%;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #fff;
+        }
+
+        /* Nhóm nút bấm */
         .btn-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 5px;
+            gap: 10px;
+            margin-top: 15px;
         }
 
-        .btn {
-            flex: 1 1 calc(50% - 4px);
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: bold;
+        button {
+            background-color: #d2e3d5;
+            color: #1b4d2e;
+            border: 1px solid #b2d0b7;
+            padding: 9px 15px;
+            border-radius: 4px;
             cursor: pointer;
-            text-align: center;
-            transition: opacity 0.2s ease;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.2s;
         }
 
-        .btn:active {
-            opacity: 0.8;
+        button:hover {
+            background-color: #c0dbc4;
         }
 
-        .btn-secondary {
-            background-color: #d8e2dc;
-            color: #2d6a4f;
-        }
-
-        .btn-refresh {
-            background-color: #2d6a4f;
+        /* Style riêng cho nút Cập nhật mới */
+        .btn-update {
+            background-color: #1b4d2e;
             color: #ffffff;
-            flex: 1 1 100%; /* Đặt nút Cập nhật nổi bật ở dòng riêng */
+            border: none;
         }
 
-        /* Responsive Table */
+        .btn-update:hover {
+            background-color: #143b22;
+        }
+
+        /* Bảng hiển thị - Tối ưu cuộn ngang mượt mà trên điện thoại */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
-            border-radius: 8px;
-            border: 1px solid #2d6a4f;
             -webkit-overflow-scrolling: touch;
+            border: 1px solid #1b4d2e;
+            border-radius: 4px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 500px; /* Đảm bảo bảng không bị xô lệch khi co nhỏ */
-            background: #fff;
+            min-width: 600px; /* Giữ kích thước bảng chuẩn không bị bóp méo */
         }
 
         th, td {
-            border: 1px solid #d0d7de;
-            padding: 8px 6px;
+            border: 1px solid #b2d0b7;
+            padding: 8px;
             text-align: center;
             font-size: 13px;
-            word-wrap: break-word;
         }
 
         th {
-            background-color: #1b4332;
-            color: #ffffff;
-            font-weight: 600;
+            background-color: #1b4d2e;
+            color: white;
+            font-weight: bold;
         }
 
-        .th-sub {
-            background-color: #2d6a4f;
+        th.sub-header {
+            background-color: #1b4d2e;
         }
 
         td.text-left {
             text-align: left;
-        }
-
-        /* Tối ưu hóa thêm cho Desktop */
-        @media (min-width: 600px) {
-            body { padding: 20px; }
-            .container { padding: 25px; }
-            .title { font-size: 24px; }
-            
-            .filter-box {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .btn-group {
-                grid-column: span 2;
-                display: flex;
-            }
-
-            .btn { flex: 1; }
-            .btn-refresh { flex: 1; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="title">Bảng Thống Kê Đăng Ký Nước</div>
+    <h2>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h2>
 
-    <div class="filter-box">
-        <div class="filter-group">
-            <label for="donViSelect">ĐƠN VỊ:</label>
-            <select id="donViSelect" onchange="filterData()">
-                <option value="">-- Tất cả đơn vị --</option>
+    <div class="filter-panel">
+        <div class="filter-row">
+            <span class="filter-label">ĐƠN VỊ:</span>
+            <div class="filter-control">
+                <select id="donViSelect" onchange="filterData()">
+                    <option value="">-- Tất cả đơn vị --</option>
                 </select>
+            </div>
         </div>
 
-        <div class="filter-group">
-            <label for="thangSelect">THÁNG:</label>
-            <select id="thangSelect" onchange="filterData()">
-                <option value="">-- Tất cả tháng --</option>
+        <div class="filter-row">
+            <span class="filter-label">THÁNG:</span>
+            <div class="filter-control">
+                <select id="thangSelect" onchange="filterData()">
+                    <option value="">-- Tất cả tháng --</option>
                 </select>
+            </div>
         </div>
 
         <div class="btn-group">
-            <button class="btn btn-secondary" onclick="exportBienBanDonVi()">Biên bản Đơn vị</button>
-            <button class="btn btn-secondary" onclick="exportBienBanTongThe()">Biên bản Tổng thể</button>
-            <button class="btn btn-refresh" onclick="refreshData()">
-                🔄 Cập nhật
-            </button>
+            <button type="button" onclick="exportBienBanDonVi()">Biên bản Đơn vị</button>
+            <button type="button" onclick="exportBienBanTongThe()">Biên bản Tổng thể (Hình 7)</button>
+            <!-- NÚT CẬP NHẬT MỚI THÊM -->
+            <button type="button" class="btn-update" onclick="window.location.reload();">🔄 Cập nhật</button>
         </div>
     </div>
 
@@ -202,11 +184,12 @@
                     <th colspan="2">Số lượng đặt (Bình)</th>
                 </tr>
                 <tr>
-                    <th class="th-sub">Loại 1 (18.5L)</th>
-                    <th class="th-sub">Loại 2 (19L)</th>
+                    <th class="sub-header">Loại 1 (18.5L)</th>
+                    <th class="sub-header">Loại 2 (19L)</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
+                <!-- Dữ liệu đổ tự động từ Apps Script / JS giữ nguyên -->
                 <tr>
                     <td>1</td>
                     <td class="text-left">Thuế cơ sở 12</td>
@@ -227,24 +210,17 @@
 </div>
 
 <script>
-    // Tính năng nút "Cập nhật" (Tải lại dữ liệu tương tự F5)
-    function refreshData() {
-        // Nếu dùng Apps Script / Web App, bạn có thể gọi hàm loadData() lại tại đây.
-        // Mặc định thực hiện reload lại trang nhanh chóng:
-        window.location.reload();
-    }
-
-    // Giữ nguyên các hàm xử lý logic cũ của bạn
+    // TOÀN BỘ LOGIC VÀ HÀM CŨ CỦA THẦY GIỮ NGUYÊN 100% Ở ĐÂY
     function filterData() {
-        // Logic lọc dữ liệu cũ giữ nguyên
+        // Logic lọc dữ liệu cũ
     }
 
     function exportBienBanDonVi() {
-        // Logic xuất biên bản đơn vị cũ giữ nguyên
+        // Logic xuất biên bản đơn vị cũ
     }
 
     function exportBienBanTongThe() {
-        // Logic xuất biên bản tổng thể cũ giữ nguyên
+        // Logic xuất biên bản tổng thể cũ
     }
 </script>
 
