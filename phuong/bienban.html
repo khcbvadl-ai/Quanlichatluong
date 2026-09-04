@@ -9,7 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-    body { background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; position: relative; min-height: 100vh; }
+    body { background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
     .container { max-width: 1350px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     h1 { text-align: center; color: #1e5631; font-size: 24px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; }
     
@@ -21,8 +21,6 @@
     .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; background: #c5d6c7; color: #4a634e; }
     .btn.active { background: #2e7d32; color: #fff; box-shadow: 0 2px 4px rgba(46,125,50,0.3); }
     .btn.active:hover { background: #1b5e20; }
-    .btn-refresh { background: #0288d1; color: #fff; }
-    .btn-refresh:hover { background: #0277bd; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .table-responsive { overflow-x: auto; border: 1px solid #1e5631; border-radius: 4px; }
@@ -39,24 +37,20 @@
 
     .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); justify-content: center; align-items: center; z-index: 1000; font-weight: bold; font-size: 18px; color: #1e5631; }
 
-    /* Thông báo Toast khi cập nhật xong */
-    .toast-msg { display: none; position: fixed; top: 20px; right: 20px; background-color: #2e7d32; color: #fff; padding: 12px 20px; border-radius: 6px; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 2000; animation: fadeIn 0.3s; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    /* Toast Thông báo cập nhật ngầm thành công */
+    .update-toast { display: none; position: fixed; bottom: 20px; right: 20px; background-color: #2e7d32; color: #fff; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 14px; font-weight: 600; z-index: 1000; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Nút Truy cập bí mật (Bấm F2 để bật/tắt) */
-    .btn-secret { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #d32f2f; color: #fff; border: none; padding: 10px 24px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 12px rgba(211,47,47,0.4); cursor: pointer; z-index: 9999; text-decoration: none; transition: all 0.2s; }
-    .btn-secret:hover { background-color: #b71c1c; transform: translateX(-50%) scale(1.05); }
+    /* Nút Truy cập xuất hiện ở cuối trang */
+    .access-container { display: none; text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #2e7d32; }
+    .btn-access { background-color: #1565c0; color: white; padding: 10px 24px; font-size: 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.2s; }
+    .btn-access:hover { background-color: #0d47a1; }
   </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loading">Đang xử lý dữ liệu...</div>
-<div class="toast-msg" id="toastMsg">Đã cập nhật dữ liệu mới nhất!</div>
-
-<!-- Nút truy cập ẩn, bấm F2 để hiển thị -->
-<a id="btnSecret" href="https://docs.google.com/spreadsheets/d/1S6qjSmSIIHsKvQCcTTmlIe3X_PPOi2-LQSP66acOlR0/edit?resourcekey=&gid=1796300655#gid=1796300655" target="_blank" class="btn-secret">
-  Truy cập Google Sheet gốc
-</a>
+<div class="update-toast" id="updateToast">✓ Đã cập nhật xong dữ liệu mới nhất!</div>
 
 <div class="container">
   <h1>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h1>
@@ -76,7 +70,6 @@
       </select>
     </div>
 
-    <button id="btnRefresh" class="btn btn-refresh" onclick="fetchLatestData(true)">Cập nhật dữ liệu</button>
     <button id="btnBienBanDonVi" class="btn" onclick="exportBienBanDonVi()" disabled>Biên bản Đơn vị</button>
     <button id="btnBienBanTongThe" class="btn" onclick="exportBienBanTongThe()" disabled>Biên bản Tổng thể (Hình 7)</button>
   </div>
@@ -91,7 +84,7 @@
           <th colspan="4">Số lượng đặt (Bình/Chai)</th>
           <th colspan="4">Thành tiền từng loại (VNĐ)</th>
           <th rowspan="2" style="width: 110px;">Tổng tiền</th>
-          <th rowspan="2" style="width: 140px;">Tiến độ giao hàng</th>
+          <th rowspan="2" style="width: 130px;">Tiến độ giao hàng</th>
         </tr>
         <tr>
           <th>Loại 1 (18.5L)</th>
@@ -109,17 +102,20 @@
       </tfoot>
     </table>
   </div>
+
+  <!-- Nút truy cập hiện khi ấn F2 -->
+  <div id="accessContainer" class="access-container">
+    <button class="btn-access" onclick="openGoogleSheet()">🔗 Truy cập </button>
+  </div>
 </div>
 
 <script>
-  // ID Spreadsheet mới
-  const SPREADSHEET_ID = '1S6qjSmSIIHsKvQCcTTmlIe3X_PPOi2-LQSP66acOlR0';
+  const SPREADSHEET_ID = '1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w';
   const URL_THONG_TIN = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Thong_tin_chung`;
   const URL_SO_LUONG = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=So_luong_dat`;
+  const GOOGLE_SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w/edit?resourcekey=&gid=1568833682#gid=1568833682`;
 
-  const CACHE_KEY_PRICES = 'water_app_prices';
-  const CACHE_KEY_SL_HD = 'water_app_sl_hd';
-  const CACHE_KEY_RAW_DATA = 'water_app_raw_data';
+  const CACHE_KEY = 'WATER_REGISTER_CACHE_DATA_V1';
 
   let prices = [74600, 81300, 72500, 90500];
   let slHopDong = [0, 0, 0, 0];
@@ -138,69 +134,41 @@
   const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType, WidthType, BorderStyle } = docx;
 
   window.onload = function() {
-    initApp();
-    setupF2Shortcut();
+    initDataWithCache();
+    setupF2KeyShortcut();
   };
 
-  // Khởi chạy ứng dụng: Hiển thị bộ nhớ đệm ngay lập tức, sau đó gọi API cập nhật ngầm
-  function initApp() {
-    const hasCache = loadFromCache();
-    if (hasCache) {
-      populateFilters();
-      filterData();
-    }
-    // Cập nhật dữ liệu mới nhất ngầm từ Google Sheets
-    fetchLatestData(!hasCache);
-  }
+  // --- CƠ CHẾ BỘ NHỚ ĐỆM (CACHE) & CẬP NHẬT NGẦM ---
+  function initDataWithCache() {
+    const cachedStr = localStorage.getItem(CACHE_KEY);
+    let hasCache = false;
 
-  // Bắt sự kiện phím F2 để ẩn/hiển thị nút "Truy cập"
-  function setupF2Shortcut() {
-    window.addEventListener('keydown', function(e) {
-      if (e.key === 'F2' || e.keyCode === 113) {
-        e.preventDefault();
-        const btn = document.getElementById('btnSecret');
-        if (btn.style.display === 'block') {
-          btn.style.display = 'none';
-        } else {
-          btn.style.display = 'block';
+    if (cachedStr) {
+      try {
+        const cachedData = JSON.parse(cachedStr);
+        rawData = cachedData.rawData || [];
+        prices = cachedData.prices || prices;
+        slHopDong = cachedData.slHopDong || slHopDong;
+
+        if (rawData.length > 0) {
+          hasCache = true;
+          populateFilters();
+          filterData();
         }
+      } catch(e) {
+        console.log("Lỗi đọc cache:", e);
       }
-    });
-  }
-
-  // Đọc dữ liệu từ bộ nhớ đệm LocalStorage
-  function loadFromCache() {
-    try {
-      const cPrices = localStorage.getItem(CACHE_KEY_PRICES);
-      const cSlHD = localStorage.getItem(CACHE_KEY_SL_HD);
-      const cRawData = localStorage.getItem(CACHE_KEY_RAW_DATA);
-
-      if (cPrices && cSlHD && cRawData) {
-        prices = JSON.parse(cPrices);
-        slHopDong = JSON.parse(cSlHD);
-        rawData = JSON.parse(cRawData);
-        return true;
-      }
-    } catch(e) {
-      console.log("Lỗi đọc cache:", e);
     }
-    return false;
-  }
 
-  // Lưu dữ liệu vào bộ nhớ đệm LocalStorage
-  function saveToCache() {
-    try {
-      localStorage.setItem(CACHE_KEY_PRICES, JSON.stringify(prices));
-      localStorage.setItem(CACHE_KEY_SL_HD, JSON.stringify(slHopDong));
-      localStorage.setItem(CACHE_KEY_RAW_DATA, JSON.stringify(rawData));
-    } catch(e) {
-      console.log("Lỗi lưu cache:", e);
+    if (!hasCache) {
+      showLoading(true);
     }
+
+    // Cập nhật ngầm dữ liệu từ Google Sheet
+    loadSheetDataInBackground(!hasCache);
   }
 
-  // Tải dữ liệu mới từ Google Sheets
-  async function fetchLatestData(showOverlay = false) {
-    if (showOverlay) showLoading(true);
+  async function loadSheetDataInBackground(showLoadingOverlay = false) {
     try {
       const resPrices = await fetch(URL_THONG_TIN);
       const textPrices = await resPrices.text();
@@ -210,30 +178,76 @@
       const textOrders = await resOrders.text();
       parseOrdersJson(textOrders);
 
-      // Lưu vào cache
-      saveToCache();
+      // Lưu dữ liệu mới vào Cache
+      const dataToCache = {
+        rawData: rawData,
+        prices: prices,
+        slHopDong: slHopDong,
+        updatedAt: new Date().getTime()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
 
-      // Cập nhật giao diện
+      // Cập nhật lại Giao diện
+      const curDV = document.getElementById('selectDonVi').value;
+      const curTH = document.getElementById('selectThang').value;
+
       populateFilters();
+
+      document.getElementById('selectDonVi').value = curDV;
+      document.getElementById('selectThang').value = curTH;
+
       filterData();
 
-      showToast("Đã cập nhật dữ liệu mới nhất!");
+      // Hiển thị toast báo đã cập nhật xong
+      showUpdateToast();
+
     } catch (err) {
-      console.log("Lỗi tải dữ liệu, chuyển sang Mock Data nếu không có dữ liệu:", err);
+      console.log("Lỗi tải dữ liệu trực tuyến, sử dụng dữ liệu hiện có hoặc Mock Data:", err);
       if (rawData.length === 0) {
         loadMockData();
       }
     } finally {
-      if (showOverlay) showLoading(false);
+      if (showLoadingOverlay) {
+        showLoading(false);
+      }
     }
   }
 
+  function showUpdateToast() {
+    const toast = document.getElementById('updateToast');
+    toast.style.display = 'block';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 3000);
+  }
+
+  // --- XỬ LÝ SỰ KIỆN PHÍM F2 ---
+  function setupF2KeyShortcut() {
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        const accessBox = document.getElementById('accessContainer');
+        accessBox.style.display = 'block';
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    });
+  }
+
+  function openGoogleSheet() {
+    window.open(GOOGLE_SHEET_EDIT_URL, '_blank');
+  }
+
+  // --- PARSE DỮ LIỆU TỪ GOOGLE SHEETS ---
   function parsePricesJson(text) {
     try {
       const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
       const jsonText = jsonMatch ? jsonMatch[1] : text.substring(47, text.length - 2);
       const json = JSON.parse(jsonText);
       const rows = json.table.rows;
+
       if (rows && rows.length > 0) {
         for (let r = 0; r < rows.length; r++) {
           if (rows[r] && rows[r].c && rows[r].c[1] && rows[r].c[1].v) {
@@ -241,12 +255,12 @@
             let idx = ['A1', 'A2', 'A3', 'A4'].indexOf(ma);
             
             if (idx !== -1) {
-              if (rows[r].c[5] && rows[r].c[5].v !== undefined) {
+              if (rows[r].c[5] && rows[r].c[5].v) {
                 let price = parseFloat(rows[r].c[5].v);
                 if (price < 1000) price *= 1000;
                 prices[idx] = price;
               }
-              if (rows[r].c[4] && rows[r].c[4].v !== undefined) {
+              if (rows[r].c[4] && rows[r].c[4].v) {
                  let val = parseFloat(rows[r].c[4].v);
                  if (val < 10000 && val % 1 !== 0) val = val * 1000; 
                  slHopDong[idx] = Math.round(val);
@@ -267,6 +281,7 @@
       const json = JSON.parse(jsonText);
       const rows = json.table.rows;
       rawData = [];
+
       rows.forEach((r, idx) => {
         if (!r.c) return;
         
@@ -280,13 +295,11 @@
         const q3 = r.c[5] ? (parseInt(r.c[5].v) || 0) : 0;
         const q4 = r.c[6] ? (parseInt(r.c[6].v) || 0) : 0;
         
-        // Thông tin phụ (Cột H, I)
+        // Thông tin phụ (Cột H, I, J) -> Cột J (r.c[9]) là Tiến độ giao hàng
         const b2 = r.c[7] ? String(r.c[7].v || '') : '';
         const b3 = r.c[8] ? String(r.c[8].v || '') : '';
-        
-        // Cột J (Chỉ số mảng 9): Tiến độ giao hàng
-        const tienDo = r.c[9] ? String(r.c[9].v || r.c[9].f || '') : '';
-        const b4 = r.c[10] ? String(r.c[10].v || '') : '';
+        const b4 = r.c[9] ? String(r.c[9].v || '') : '';
+        const tienDo = r.c[9] ? String(r.c[9].v || '') : '';
 
         if (donVi && thang) {
           rawData.push({
@@ -304,10 +317,12 @@
   function loadMockData() {
     slHopDong = [14375, 4617, 990, 1767];
     rawData = [
-      { id: 1, donVi: "Thuế 1", thang: "8/2026", q: [12, 20, 30, 0], b2: "Số 10 Nguyễn Trãi, Thanh Xuân, Hà Nội", b3: "Nguyễn Văn A", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao 100%" },
-      { id: 2, donVi: "Thuế 2", thang: "8/2026", q: [200, 3, 15, 20], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở", tienDo: "Đã giao 50%" },
-      { id: 3, donVi: "Thuế 3", thang: "9/2026", q: [30, 25, 36, 12], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở", tienDo: "Chưa giao" },
-      { id: 4, donVi: "Thuế 2", thang: "9/2026", q: [62, 34, 52, 32], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở", tienDo: "Đang vận chuyển" }
+      { id: 1, donVi: "Thuế 1", thang: "8/2026", q: [12, 20, 30, 0], b2: "Số 10 Nguyễn Trãi, Thanh Xuân, Hà Nội", b3: "Nguyễn Văn A", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao" },
+      { id: 2, donVi: "Thuế 2", thang: "8/2026", q: [200, 3, 15, 20], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở", tienDo: "Đã giao" },
+      { id: 3, donVi: "Thuế 3", thang: "9/2026", q: [30, 25, 36, 12], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở", tienDo: "Đang giao" },
+      { id: 4, donVi: "Thuế 2", thang: "9/2026", q: [62, 34, 52, 32], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở", tienDo: "Chưa giao" },
+      { id: 5, donVi: "Thuế 5", thang: "9/2026", q: [52, 14, 23, 62], b2: "Số 150 Cầu Giấy, Cầu Giấy, Hà Nội", b3: "Phạm Văn D", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao" },
+      { id: 6, donVi: "Thuế 3", thang: "9/2026", q: [25, 14, 23, 62], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao" }
     ];
     populateFilters();
     filterData();
@@ -317,9 +332,6 @@
     const selectDV = document.getElementById('selectDonVi');
     const selectTH = document.getElementById('selectThang');
 
-    const currentDV = selectDV.value;
-    const currentTH = selectTH.value;
-
     const donVis = [...new Set(rawData.map(item => item.donVi))];
     const thangs = [...new Set(rawData.map(item => item.thang))];
 
@@ -328,9 +340,6 @@
 
     selectTH.innerHTML = '<option value="">-- Tất cả tháng --</option>';
     thangs.forEach(th => selectTH.innerHTML += `<option value="${th}">${th}</option>`);
-
-    if (donVis.includes(currentDV)) selectDV.value = currentDV;
-    if (thangs.includes(currentTH)) selectTH.value = currentTH;
   }
 
   function filterData() {
@@ -395,7 +404,7 @@
         <td class="text-right">${formatNum(money[2])}</td>
         <td class="text-right">${formatNum(money[3])}</td>
         <td class="text-right" style="font-weight:bold;">${formatNum(totalRow)}</td>
-        <td class="text-center">${item.tienDo || ''}</td>
+        <td>${item.tienDo || ''}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -435,15 +444,7 @@
     document.getElementById('loading').style.display = show ? 'flex' : 'none';
   }
 
-  function showToast(text) {
-    const toast = document.getElementById('toastMsg');
-    toast.innerText = text;
-    toast.style.display = 'block';
-    setTimeout(() => {
-      toast.style.display = 'none';
-    }, 3000);
-  }
-
+  // --- XUẤT BIÊN BẢN (DOCX) ---
   async function exportBienBanDonVi() {
     const selectedDV = document.getElementById('selectDonVi').value;
     const selectedTH = document.getElementById('selectThang').value;
