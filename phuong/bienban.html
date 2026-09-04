@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
-  <!-- docx.js & FileSaver.js phục vụ tạo & tải file Word trực tiếp trên trình duyệt -->
   <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
@@ -15,19 +14,18 @@
     
     /* BỘ LỌC & NÚT BẤM */
     .filter-box { background-color: #edf5ee; padding: 15px; border-radius: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; border: 1px solid #d4e5d7; }
-    .filter-group { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; min-width: 0; }
+    .filter-group { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; }
     .filter-group label { font-weight: 700; color: #1e5631; font-size: 13px; text-transform: uppercase; white-space: nowrap; }
-    .filter-group select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; background: #fff; font-size: 14px; text-overflow: ellipsis; }
+    .filter-group select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; background: #fff; font-size: 14px; min-width: 160px; }
     
     .button-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-    .btn { padding: 9px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; background: #c5d6c7; color: #4a634e; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; background: #c5d6c7; color: #4a634e; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
     .btn.active { background: #2e7d32; color: #fff; box-shadow: 0 2px 4px rgba(46,125,50,0.3); }
     .btn.active:hover { background: #1b5e20; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* Nút Cập Nhật nhỏ gọn */
-    .btn-refresh { background-color: #0288d1; color: white; padding: 9px 12px; }
+    .btn-refresh { background-color: #0288d1; color: white; }
     .btn-refresh:hover { background-color: #01579b; }
 
     /* BẢNG DỮ LIỆU & SCROLL */
@@ -45,30 +43,68 @@
 
     .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.75); justify-content: center; align-items: center; z-index: 1000; font-weight: bold; font-size: 16px; color: #1e5631; }
 
-    /* Toast Thông báo cập nhật thành công */
     .update-toast { display: none; position: fixed; bottom: 20px; right: 20px; background-color: #2e7d32; color: #fff; padding: 10px 18px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 13px; font-weight: 600; z-index: 1000; animation: fadeIn 0.3s; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Nút Truy cập xuất hiện ở cuối trang */
     .access-container { display: none; text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #2e7d32; }
     .btn-access { background-color: #1565c0; color: white; padding: 10px 20px; font-size: 14px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.2s; }
     .btn-access:hover { background-color: #0d47a1; }
 
-    /* XỬ LÝ RIÊNG CHO DI ĐỘNG (MOBILE RESPONSIVE) */
+    /* CẢI TIẾN RIÊNG CHO DI ĐỘNG: LOẠI BỎ KHOẢNG TRẮNG */
     @media (max-width: 768px) {
-      body { padding: 8px; }
-      .container { padding: 12px; border-radius: 6px; }
-      h1 { font-size: 18px; margin-bottom: 12px; }
+      body { padding: 6px; }
+      .container { padding: 10px; border-radius: 6px; }
+      h1 { font-size: 16px; margin-top: 2px; margin-bottom: 10px; }
 
-      .filter-box { flex-direction: column; align-items: stretch; padding: 12px; gap: 10px; }
-      .filter-group { flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; }
-      .filter-group select { width: 100%; font-size: 13px; padding: 8px; }
+      .filter-box { 
+        flex-direction: column; 
+        align-items: stretch; 
+        padding: 10px; 
+        gap: 8px; 
+        margin-bottom: 12px;
+      }
+
+      .filter-group { 
+        flex-direction: row; 
+        align-items: center; 
+        justify-content: space-between;
+        gap: 8px; 
+        width: 100%; 
+        flex: none;
+      }
       
-      .button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
-      .btn-refresh { grid-column: span 2; width: 100%; }
+      .filter-group label {
+        font-size: 12px;
+        min-width: 65px;
+      }
+
+      .filter-group select { 
+        flex: 1;
+        font-size: 13px; 
+        padding: 6px 8px; 
+        height: 36px;
+      }
+      
+      .button-group { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 6px; 
+        width: 100%; 
+        margin-top: 4px;
+      }
+      
+      .btn {
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+
+      .btn-refresh { 
+        grid-column: span 2; 
+        width: 100%; 
+      }
 
       table { font-size: 11px; min-width: 780px; }
-      th, td { padding: 5px 3px; }
+      th, td { padding: 4px 2px; }
     }
   </style>
 </head>
@@ -130,7 +166,6 @@
     </table>
   </div>
 
-  <!-- Nút truy cập hiện khi ấn F2 -->
   <div id="accessContainer" class="access-container">
     <button class="btn-access" onclick="openGoogleSheet()">🔗 Truy cập Google Sheet dữ liệu gốc</button>
   </div>
@@ -165,7 +200,6 @@
     setupF2KeyShortcut();
   };
 
-  // --- CƠ CHẾ BỘ NHỚ ĐỆM (CACHE) & CẬP NHẬT NGẦM ---
   function initDataWithCache() {
     const cachedStr = localStorage.getItem(CACHE_KEY);
     let hasCache = false;
@@ -191,11 +225,9 @@
       showLoading(true);
     }
 
-    // Cập nhật ngầm dữ liệu từ Google Sheet
     loadSheetDataInBackground(!hasCache);
   }
 
-  // --- NÚT BẤM "CẬP NHẬT" (ÉP TẢI LẠI TRỰC TIẾP) ---
   function forceReloadData() {
     showLoading(true);
     loadSheetDataInBackground(true);
@@ -211,7 +243,6 @@
       const textOrders = await resOrders.text();
       parseOrdersJson(textOrders);
 
-      // Lưu dữ liệu mới vào Cache
       const dataToCache = {
         rawData: rawData,
         prices: prices,
@@ -220,7 +251,6 @@
       };
       localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
 
-      // Cập nhật lại Giao diện
       const curDV = document.getElementById('selectDonVi').value;
       const curTH = document.getElementById('selectThang').value;
 
@@ -230,12 +260,10 @@
       document.getElementById('selectThang').value = curTH;
 
       filterData();
-
-      // Hiển thị toast báo đã cập nhật xong
       showUpdateToast();
 
     } catch (err) {
-      console.log("Lỗi tải dữ liệu trực tuyến, sử dụng dữ liệu hiện có hoặc Mock Data:", err);
+      console.log("Lỗi tải dữ liệu trực tuyến:", err);
       if (rawData.length === 0) {
         loadMockData();
       }
@@ -254,7 +282,6 @@
     }, 3000);
   }
 
-  // --- XỬ LÝ SỰ KIỆN PHÍM F2 ---
   function setupF2KeyShortcut() {
     window.addEventListener('keydown', function(e) {
       if (e.key === 'F2') {
@@ -273,7 +300,6 @@
     window.open(GOOGLE_SHEET_EDIT_URL, '_blank');
   }
 
-  // --- PARSE DỮ LIỆU TỪ GOOGLE SHEETS ---
   function parsePricesJson(text) {
     try {
       const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
@@ -349,10 +375,7 @@
     rawData = [
       { id: 1, donVi: "Thuế 1", thang: "8/2026", q: [12, 20, 30, 0], b2: "Số 10 Nguyễn Trãi, Thanh Xuân, Hà Nội", b3: "Nguyễn Văn A", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao" },
       { id: 2, donVi: "Thuế 2", thang: "8/2026", q: [200, 3, 15, 20], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở", tienDo: "Đã giao" },
-      { id: 3, donVi: "Thuế 3", thang: "9/2026", q: [30, 25, 36, 12], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở", tienDo: "Đang giao" },
-      { id: 4, donVi: "Thuế 2", thang: "9/2026", q: [62, 34, 52, 32], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở", tienDo: "Chưa giao" },
-      { id: 5, donVi: "Thuế 5", thang: "9/2026", q: [52, 14, 23, 62], b2: "Số 150 Cầu Giấy, Cầu Giấy, Hà Nội", b3: "Phạm Văn D", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao" },
-      { id: 6, donVi: "Thuế 3", thang: "9/2026", q: [25, 14, 23, 62], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao" }
+      { id: 3, donVi: "Thuế 3", thang: "9/2026", q: [30, 25, 36, 12], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở", tienDo: "Đang giao" }
     ];
     populateFilters();
     filterData();
@@ -474,7 +497,6 @@
     document.getElementById('loading').style.display = show ? 'flex' : 'none';
   }
 
-  // --- XUẤT BIÊN BẢN (DOCX) ---
   async function exportBienBanDonVi() {
     const selectedDV = document.getElementById('selectDonVi').value;
     const selectedTH = document.getElementById('selectThang').value;
